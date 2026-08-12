@@ -1,0 +1,101 @@
+services:
+  nextcloud:
+    image: nextcloud:34.0.1-apache
+    environment:
+      - TZ=${TZ}
+      - PHP_MEMORY_LIMIT=1G
+      - PHP_UPLOAD_LIMIT=16G
+      - APACHE_BODY_LIMIT=0
+    volumes:
+      - /mnt/cephfs/app_data/nextcloud-1/html:/var/www/html
+      - /mnt/truenas/ssdp1/docker/nextcloud:/data
+    networks:
+      - proxy
+      - redisnet
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.nextcloud.entrypoints=http"
+        - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN}`)"
+        - "traefik.http.middlewares.nextcloud-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.nextcloud.middlewares=nextcloud-https-redirect"
+        - "traefik.http.routers.nextcloud-secure.entrypoints=https"
+        - "traefik.http.routers.nextcloud-secure.rule=Host(`nextcloud.${DOMAIN}`)"
+        - "traefik.http.routers.nextcloud-secure.tls=true"
+        - "traefik.http.routers.nextcloud-secure.service=nextcloud"
+        - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+        - "traefik.swarm.network=proxy"
+        # Security headers (v3-safe: sslRedirect removed, frameDeny removed)
+        - "traefik.http.middlewares.nextcloud-headers.headers.stsSeconds=15552000"
+        - "traefik.http.middlewares.nextcloud-headers.headers.stsIncludeSubdomains=true"
+        - "traefik.http.middlewares.nextcloud-headers.headers.stsPreload=true"
+        - "traefik.http.middlewares.nextcloud-headers.headers.customFrameOptionsValue=SAMEORIGIN"
+        - "traefik.http.middlewares.nextcloud-headers.headers.contentTypeNosniff=true"
+        # CalDAV/CardDAV well-known redirects (apache image needs these at the proxy
+        # OR relies on its own .htaccess — belt and suspenders, harmless to include)
+        - "traefik.http.middlewares.nextcloud-dav.redirectregex.regex=https://(.*)/.well-known/(?:card|cal)dav"
+        - "traefik.http.middlewares.nextcloud-dav.redirectregex.replacement=https://$${1}/remote.php/dav"
+        - "traefik.http.middlewares.nextcloud-dav.redirectregex.permanent=true"
+        - "traefik.http.routers.nextcloud-secure.middlewares=nextcloud-headers,nextcloud-dav"
+        # HOMEPAGE
+        - "homepage.group=Personal"
+        - "homepage.name=nextcloud"
+        - "homepage.icon=nextcloud.png"
+        - "homepage.href=https://nextcloud.${DOMAIN}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  cron:
+    image: nextcloud:34.0.1-apache
+    entrypoint: /cron.sh
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /mnt/cephfs/app_data/nextcloud-1/html:/var/www/html
+      - /mnt/truenas/ssdp1/docker/nextcloud:/data
+    networks:
+      - redisnet
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 128M
+      labels:
+        - "traefik.enable=false"
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+networks:
+  proxy:
+    external: true
+  redisnet:
+    external: true

@@ -1,0 +1,59 @@
+services:
+  gatus:
+    image: twinproduction/gatus:v5.36.0
+    # ports:
+    #   - "5245:8080"
+    environment:
+    #   - POSTGRES_USER=${PG_USER}
+    #   - POSTGRES_PASSWORD=${PG_PASS}
+    #   - POSTGRES_DB=${PG_DB}
+      - GATUS_LOG_LEVEL=WARN
+    volumes:
+      - /mnt/cephfs/app_data/gatus/config:/config
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.gatus.entrypoints=http"
+        - "traefik.http.routers.gatus.rule=Host(`status.${DOMAIN}`)"
+        - "traefik.http.middlewares.gatus-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.gatus.middlewares=gatus-https-redirect"
+        - "traefik.http.routers.gatus-secure.entrypoints=https"
+        - "traefik.http.routers.gatus-secure.rule=Host(`status.${DOMAIN}`)"
+        - "traefik.http.routers.gatus-secure.tls=true"
+        - "traefik.http.routers.gatus-secure.service=gatus"
+        - "traefik.http.services.gatus.loadbalancer.server.port=8080"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Administration"
+        - "homepage.name=gatus"
+        - "homepage.icon=gatus.png"
+        - "homepage.href=https://status.${DOMAIN}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,85 @@
+services:
+  freshrss:
+    image: freshrss/freshrss:1.29.1
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        export OIDC_CLIENT_SECRET=$$(cat /run/secrets/freshrss--oidc_client_secret)
+        export OIDC_CLIENT_CRYPTO_KEY=$$(cat /run/secrets/freshrss--oidc_client_crypto_key)
+        sed -i 's|CustomLog.*|CustomLog /dev/null combined|g' /etc/apache2/sites-enabled/*.conf 2>/dev/null || true
+        exec ./Docker/entrypoint.sh /bin/bash -o pipefail -c '([ -z "$$CRON_MIN" ] || cron) && . /etc/apache2/envvars && exec apache2 -D FOREGROUND $$([ -n "$$OIDC_ENABLED" ] && [ "$$OIDC_ENABLED" -ne 0 ] && echo "-D OIDC_ENABLED")'
+    secrets:
+      - freshrss--oidc_client_secret
+      - freshrss--oidc_client_crypto_key
+    volumes:
+      - /mnt/cephfs/app_data/freshrss/data:/var/www/FreshRSS/data
+      - /mnt/cephfs/app_data/freshrss/extensions:/var/www/FreshRSS/extensions
+    environment:
+      TZ: ${TZ}
+      CRON_MIN: '3,33'
+      TRUSTED_PROXY: 10.0.0.0/8
+      OIDC_ENABLED: 1
+      OIDC_CLIENT_ID: Agse8AFbUnjdXFEfTOpWRXusaDwwQcNWPSC200jY
+      OIDC_X_FORWARDED_HEADERS: X-Forwarded-Host X-Forwarded-Port X-Forwarded-Proto
+      OIDC_SCOPES: openid email profile
+      OIDC_REMOTE_USER_CLAIM: preferred_username
+      OIDC_PROVIDER_METADATA_URL: https://auth.${DOMAIN}/application/o/freshrss/.well-known/openid-configuration
+      COPY_LOG_TO_SYSLOG: 'Off'
+      COPY_SYSLOG_TO_STDERR: 'Off'
+    healthcheck:
+      test: ["CMD", "/var/www/FreshRSS/cli/health.php"]
+      interval: 75s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    stop_grace_period: 30s
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      update_config:
+        order: stop-first
+        parallelism: 1
+      rollback_config:
+        order: stop-first
+        parallelism: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.rss.entrypoints=http"
+        - "traefik.http.routers.rss.rule=Host(`rss.${DOMAIN}`)"
+        - "traefik.http.routers.rss.service=rss"
+        - "traefik.http.routers.rss.middlewares=rss-https-redirect"
+        - "traefik.http.middlewares.rss-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.rss-secure.entrypoints=https"
+        - "traefik.http.routers.rss-secure.rule=Host(`rss.${DOMAIN}`)"
+        - "traefik.http.routers.rss-secure.tls=true"
+        - "traefik.http.routers.rss-secure.service=rss"
+        - "traefik.http.services.rss.loadbalancer.server.port=80"
+        - "traefik.swarm.network=proxy"
+        - "homepage.group=Personal"
+        - "homepage.name=freshrss"
+        - "homepage.icon=freshrss.png"
+        - "homepage.href=https://rss.${DOMAIN}"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+secrets:
+  freshrss--oidc_client_secret:
+    external: true
+  freshrss--oidc_client_crypto_key:
+    external: true
+
+networks:
+  proxy:
+    external: true

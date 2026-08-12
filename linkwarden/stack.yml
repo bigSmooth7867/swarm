@@ -1,0 +1,189 @@
+services:
+  linkwarden:
+    image: ghcr.io/linkwarden/linkwarden:v2.16.0
+    init: true
+    user: "1000:1000"
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        export NEXTAUTH_SECRET=$$(cat /run/secrets/linkwarden--nextauth_secret)
+        export DATABASE_URL=$$(cat /run/secrets/linkwarden--database_url)
+        export MEILI_MASTER_KEY=$$(cat /run/secrets/linkwarden--meili_master_key)
+        export AUTHENTIK_CLIENT_SECRET=$$(cat /run/secrets/linkwarden--authentik_client_secret)
+        export SPACES_KEY=$$(cat /run/secrets/linkwarden--spaces_key)
+        export SPACES_SECRET=$$(cat /run/secrets/linkwarden--spaces_secret)
+        export PATH=/data/node_modules/.bin:$$PATH
+        prisma migrate deploy --schema=/data/packages/prisma/schema.prisma && exec concurrently -k -n web,worker "cd /data/apps/web && exec next start" "cd /data/apps/worker && exec tsx worker.ts"
+    secrets:
+      - linkwarden--nextauth_secret
+      - linkwarden--database_url
+      - linkwarden--meili_master_key
+      - linkwarden--authentik_client_secret
+      - linkwarden--spaces_key
+      - linkwarden--spaces_secret
+    environment:
+      NEXTAUTH_URL: https://linkwarden.${DOMAIN}/api/v1/auth
+      MEILI_HOST: http://meilisearch:7700
+      PLAYWRIGHT_WS_URL: ws://browser:3001/chrome?blockAds=true
+      NEXT_PUBLIC_DISABLE_REGISTRATION: "false"
+      NEXT_PUBLIC_CREDENTIALS_ENABLED: "false"
+      NEXT_PUBLIC_AUTHENTIK_ENABLED: "true"
+      AUTHENTIK_CLIENT_ID: iPEBYjcFZl2UerHV7yTvBw9mXV34r182JkgfA2U6
+      AUTHENTIK_ISSUER: https://auth.${DOMAIN}/application/o/linkwarden
+      # Garage S3 storage
+      SPACES_ENDPOINT: https://s3.${DOMAIN}
+      SPACES_BUCKET_NAME: linkwarden
+      SPACES_REGION: us-east-1
+      SPACES_FORCE_PATH_STYLE: "true"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    stop_grace_period: 30s
+    networks:
+      - proxy
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      update_config:
+        order: stop-first
+        parallelism: 1
+      rollback_config:
+        order: stop-first
+        parallelism: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.linkwarden.entrypoints=http"
+        - "traefik.http.routers.linkwarden.rule=Host(`linkwarden.${DOMAIN}`)"
+        - "traefik.http.routers.linkwarden.service=linkwarden"
+        - "traefik.http.routers.linkwarden.middlewares=linkwarden-https-redirect"
+        - "traefik.http.middlewares.linkwarden-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.linkwarden-secure.entrypoints=https"
+        - "traefik.http.routers.linkwarden-secure.rule=Host(`linkwarden.${DOMAIN}`)"
+        - "traefik.http.routers.linkwarden-secure.tls=true"
+        - "traefik.http.routers.linkwarden-secure.service=linkwarden"
+        - "traefik.http.services.linkwarden.loadbalancer.server.port=3000"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Personal"
+        - "homepage.name=linkwarden"
+        - "homepage.icon=linkwarden.png"
+        - "homepage.href=https://linkwarden.${DOMAIN}"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  browser:
+    image: ghcr.io/browserless/chrome:v2.55.3
+    init: true
+    environment:
+      - PORT=3001
+      - TIMEOUT=300000
+      - CONCURRENT=10
+    volumes:
+      - type: tmpfs
+        target: /dev/shm
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/pressure"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 30s
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      update_config:
+        order: stop-first
+        parallelism: 1
+      rollback_config:
+        order: stop-first
+        parallelism: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.41.0
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        export MEILI_MASTER_KEY=$$(cat /run/secrets/linkwarden--meili_master_key)
+        exec /bin/meilisearch
+    secrets:
+      - linkwarden--meili_master_key
+    environment:
+      - MEILI_LOG_LEVEL=WARN
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - /mnt/cephfs/app_data/linkwarden/meili_data:/meili_data
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      update_config:
+        order: stop-first
+        parallelism: 1
+      rollback_config:
+        order: stop-first
+        parallelism: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+secrets:
+  linkwarden--nextauth_secret:
+    external: true
+  linkwarden--database_url:
+    external: true
+  linkwarden--meili_master_key:
+    external: true
+  linkwarden--authentik_client_secret:
+    external: true
+  linkwarden--spaces_key:
+    external: true
+  linkwarden--spaces_secret:
+    external: true
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: overlay

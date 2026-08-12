@@ -1,0 +1,133 @@
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.93.0
+    init: true
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        # Export Docker secrets as env vars — litellm reads all of these
+        # via os.environ directly (no native Docker secrets support)
+        for secret in LITELLM_MASTER_KEY LITELLM_SALT_KEY DATABASE_URL GENERIC_CLIENT_SECRET GENERIC_CLIENT_STATE PROXY_ADMIN_ID; do
+          f="/run/secrets/litellm--$$(echo $$secret | tr '[:upper:]' '[:lower:]')"
+          [ -f "$$f" ] && export "$$secret"="$$(cat $$f)"
+        done
+        exec docker/prod_entrypoint.sh --config=/app/config.yaml --port=4000
+    volumes:
+      - /mnt/cephfs/app_data/litellm/config.yaml:/app/config.yaml:ro
+    environment:
+      LITELLM_LOG: "WARNING"
+      STORE_MODEL_IN_DB: "True"
+      PROXY_BASE_URL: "https://litellm.${DOMAIN}"
+      GENERIC_CLIENT_ID: "CWQeP228pHMQP34UILSv4dBmCpnWWphaoeqRLrUp"
+      GENERIC_AUTHORIZATION_ENDPOINT: "https://auth.${DOMAIN}/application/o/authorize/"
+      GENERIC_TOKEN_ENDPOINT: "https://auth.${DOMAIN}/application/o/token/"
+      GENERIC_USERINFO_ENDPOINT: "https://auth.${DOMAIN}/application/o/userinfo/"
+      GENERIC_USER_ID_ATTRIBUTE: "sub"
+      GENERIC_USER_EMAIL_ATTRIBUTE: "email"
+      GENERIC_USER_DISPLAY_NAME_ATTRIBUTE: "username"
+      GENERIC_SCOPE: "openid profile email"
+      PROXY_LOGOUT_URL: "https://litellm.${DOMAIN}"
+      AUTO_REDIRECT_UI_LOGIN_TO_SSO: "True"
+      PRESIDIO_ANALYZER_API_BASE: "http://presidio-analyzer:3000"
+      PRESIDIO_ANONYMIZER_API_BASE: "http://presidio-anonymizer:3000"
+    secrets:
+      - litellm--litellm_master_key
+      - litellm--litellm_salt_key
+      - litellm--generic_client_secret
+      - litellm--generic_client_state
+      - litellm--proxy_admin_id
+      - litellm--database_url
+    # healthcheck:
+    #   test: [ "CMD-SHELL", "wget --no-verbose --tries=1 http://localhost:4000/health/liveness  || exit 1" ]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.litellm.entrypoints=http"
+        - "traefik.http.routers.litellm.rule=Host(`litellm.${DOMAIN}`)"
+        - "traefik.http.middlewares.litellm-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.litellm.middlewares=litellm-https-redirect"
+        - "traefik.http.routers.litellm-secure.entrypoints=https"
+        - "traefik.http.routers.litellm-secure.rule=Host(`litellm.${DOMAIN}`)"
+        - "traefik.http.routers.litellm-secure.tls=true"
+        - "traefik.http.routers.litellm-secure.service=litellm"
+        - "traefik.http.services.litellm.loadbalancer.server.port=4000"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Personal"
+        - "homepage.name=litellm"
+        - "homepage.icon=litellm.png"
+        - "homepage.href=https://litellm.${DOMAIN}/ui"
+
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:2.2.362
+    environment:
+      - LOG_LEVEL=WARNING
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+
+  presidio-anonymizer:
+    image: mcr.microsoft.com/presidio-anonymizer:2.2.362
+    environment:
+      - LOG_LEVEL=WARNING
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+
+  ### ADD PROMETHEUS FOR LITELLM??
+
+  # prometheus:
+  #   image: prom/prometheus
+  #   volumes:
+  #     - prometheus_data:/prometheus
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  #   ports:
+  #     - "9090:9090"
+  #   command:
+  #     - "--config.file=/etc/prometheus/prometheus.yml"
+  #     - "--storage.tsdb.path=/prometheus"
+  #     - "--storage.tsdb.retention.time=15d"
+  #   restart: always
+
+secrets:
+  litellm--litellm_master_key:
+    external: true
+  litellm--litellm_salt_key:
+    external: true
+  litellm--generic_client_secret:
+    external: true
+  litellm--generic_client_state:
+    external: true
+  litellm--proxy_admin_id:
+    external: true
+  litellm--database_url:
+    external: true
+
+networks:
+  proxy:
+    external: true

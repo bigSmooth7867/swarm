@@ -1,0 +1,304 @@
+services:
+  prowlarr:
+    image: linuxserver/prowlarr:2.5.2.5491-ls156
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Etc/UTC
+      - UMASK=002
+    volumes:
+      - /mnt/cephfs/app_data/prowlarr/data:/config
+    # ports:
+    #     - 9696:9696
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.prowlarr.entrypoints=http"
+        - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.${DOMAIN}`)"
+        - "traefik.http.middlewares.prowlarr-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.prowlarr.middlewares=prowlarr-https-redirect"
+        - "traefik.http.routers.prowlarr-secure.entrypoints=https"
+        - "traefik.http.routers.prowlarr-secure.rule=Host(`prowlarr.${DOMAIN}`)"
+        - "traefik.http.routers.prowlarr-secure.tls=true"
+        - "traefik.http.routers.prowlarr-secure.service=prowlarr"
+        - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
+        - "traefik.http.routers.prowlarr-secure.middlewares=middlewares-authentik@file" 
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - "homepage.group=Media"
+        - "homepage.name=prowlarr"
+        - "homepage.icon=prowlarr.png"
+        - "homepage.href=https://prowlarr.${DOMAIN}"
+
+  radarr:
+    image: linuxserver/radarr:6.3.0.10514-ls313
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Etc/UTC
+      - UMASK=002
+    volumes:
+      - /mnt/cephfs/app_data/radarr/data:/config
+      - media-data:/data
+    # ports:
+    #   - 7878:7878
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.radarr.entrypoints=http"
+        - "traefik.http.routers.radarr.rule=Host(`radarr.${DOMAIN}`)"
+        - "traefik.http.middlewares.radarr-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.radarr.middlewares=radarr-https-redirect"
+        - "traefik.http.routers.radarr-secure.entrypoints=https"
+        - "traefik.http.routers.radarr-secure.rule=Host(`radarr.${DOMAIN}`)"
+        - "traefik.http.routers.radarr-secure.tls=true"
+        - "traefik.http.routers.radarr-secure.service=radarr"
+        - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+        - "traefik.http.routers.radarr-secure.middlewares=middlewares-authentik@file"
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - homepage.group=Media
+        - homepage.name=radarr
+        - homepage.icon=radarr.png
+        - homepage.href=https://radarr.${DOMAIN}
+
+  sonarr:
+    image: linuxserver/sonarr:4.0.19.2979-ls321
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Etc/UTC
+      - UMASK=002
+    volumes:
+      - /mnt/cephfs/app_data/sonarr/data:/config
+      - media-data:/data
+    # ports:
+    #   - 8989:8989 
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.sonarr.entrypoints=http"
+        - "traefik.http.routers.sonarr.rule=Host(`sonarr.${DOMAIN}`)"
+        - "traefik.http.middlewares.sonarr-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.sonarr.middlewares=sonarr-https-redirect"
+        - "traefik.http.routers.sonarr-secure.entrypoints=https"
+        - "traefik.http.routers.sonarr-secure.rule=Host(`sonarr.${DOMAIN}`)"
+        - "traefik.http.routers.sonarr-secure.tls=true"
+        - "traefik.http.routers.sonarr-secure.service=sonarr"
+        - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+        - "traefik.http.routers.sonarr-secure.middlewares=middlewares-authentik@file"
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - "homepage.group=Media"
+        - "homepage.name=sonarr"
+        - "homepage.icon=sonarr.png"
+        - "homepage.href=https://sonarr.${DOMAIN}"
+
+  profilarr:
+    image: ghcr.io/dictionarry-hub/profilarr:2.1.0
+    # ports:
+    #   - 6868:6868
+    volumes:
+      - /home/nexus/local/profilarr/config:/config
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - ORIGIN=https://profilarr.${DOMAIN}
+      # - PORT=6868
+      # - HOST=0.0.0.0
+      # - PARSER_HOST=parser
+      # - PARSER_PORT=5000
+      - AUTH=oidc
+      - OIDC_CLIENT_ID=AK11f12grQb6lZGZyvTeLBpAmKuWRXXvZ1KNkABT
+      - OIDC_DISCOVERY_URL=https://auth.${DOMAIN}/application/o/profilarr/.well-known/openid-configuration
+      - OIDC_CLIENT_SECRET_FILE=/run/secrets/profilarr--oidc_client_secret
+      - PROFILARR_API_KEY_FILE=/run/secrets/profilarr--api_key
+    secrets:
+      - profilarr--oidc_client_secret
+      - profilarr--api_key
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.profilarr.entrypoints=http"
+        - "traefik.http.routers.profilarr.rule=Host(`profilarr.${DOMAIN}`)"
+        - "traefik.http.middlewares.profilarr-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.profilarr.middlewares=profilarr-https-redirect"
+        - "traefik.http.routers.profilarr-secure.entrypoints=https"
+        - "traefik.http.routers.profilarr-secure.rule=Host(`profilarr.${DOMAIN}`)"
+        - "traefik.http.routers.profilarr-secure.tls=true"
+        - "traefik.http.routers.profilarr-secure.service=profilarr"
+        - "traefik.http.services.profilarr.loadbalancer.server.port=6868"
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - "homepage.group=Media"
+        - "homepage.name=profilarr"
+        - "homepage.icon=profilarr.png"
+        - "homepage.href=https://profilarr.${DOMAIN}"
+
+  sabnzbd:
+    image: linuxserver/sabnzbd:5.1.0-ls266
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Etc/UTC
+      - UMASK=002
+    volumes:
+      - /home/nexus/local/sabnzbd/config:/config
+      - media-usenet:/data/usenet
+    # ports:
+    #   - 8080:8080
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.sabnzbd.entrypoints=http"
+        - "traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.${DOMAIN}`)"
+        - "traefik.http.middlewares.sabnzbd-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.sabnzbd.middlewares=sabnzbd-https-redirect"
+        - "traefik.http.routers.sabnzbd-secure.entrypoints=https"
+        - "traefik.http.routers.sabnzbd-secure.rule=Host(`sabnzbd.${DOMAIN}`)"
+        - "traefik.http.routers.sabnzbd-secure.tls=true"
+        - "traefik.http.routers.sabnzbd-secure.service=sabnzbd"
+        - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
+        - "traefik.http.routers.sabnzbd-secure.middlewares=middlewares-authentik@file"
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - "homepage.group=Media"
+        - "homepage.name=sabnzbd"
+        - "homepage.icon=sabnzbd.png"
+        - "homepage.href=https://sabnzbd.${DOMAIN}"
+
+  iSponsorBlockTV:
+      image: ghcr.io/dmunozv04/isponsorblocktv:v2.10.0
+      volumes:
+        - /mnt/cephfs/app_data/isponsorblocktv:/app/data
+      networks:
+        - proxy
+      deploy:
+        replicas: 1
+        restart_policy:
+          condition: any
+
+  # wizarr:
+  #     image: ghcr.io/wizarrrr/wizarr:v2026.7.1
+  #     volumes:
+  #       - /home/nexus/local/wizarr/config/database:/data/database
+  #     environment:
+  #       - PUID=${PUID}
+  #       - PGID=${PGID}
+  #       - DISABLE_BUILTIN_AUTH=true
+  #       - TZ=${TZ}
+  #       - APP_URL=https://invite.${DOMAIN}
+  #     networks:
+  #       - proxy
+  #     deploy:
+  #       replicas: 1
+  #       restart_policy:
+  #         condition: any
+  #       placement:
+  #         constraints:
+  #           - node.hostname == swarm-02
+  #       labels:
+  #       #TRAEFIK
+  #         - "traefik.enable=true"
+  #         ## Internal HTTP router
+  #         - "traefik.http.routers.invite-internal.entrypoints=http"
+  #         - "traefik.http.routers.invite-internal.rule=Host(`invite.${DOMAIN}`)"
+  #         - "traefik.http.routers.invite-internal.middlewares=invite-https-redirect"
+  #         ## External HTTP router
+  #         - "traefik.http.routers.invite-external.entrypoints=http-external"
+  #         - "traefik.http.routers.invite-external.rule=Host(`invite.${DOMAIN}`)"
+  #         - "traefik.http.routers.invite-external.middlewares=invite-https-redirect"
+  #         ## Internal HTTPS router
+  #         - "traefik.http.routers.invite-secure-internal.entrypoints=https"
+  #         - "traefik.http.routers.invite-secure-internal.rule=Host(`invite.${DOMAIN}`)"
+  #         - "traefik.http.routers.invite-secure-internal.tls=true"
+  #         - "traefik.http.routers.invite-secure-internal.service=invite"
+  #         ## External HTTPS router
+  #         - "traefik.http.routers.invite-secure-external.entrypoints=https-external"
+  #         - "traefik.http.routers.invite-secure-external.rule=Host(`invite.${DOMAIN}`)"
+  #         - "traefik.http.routers.invite-secure-external.tls=true"
+  #         - "traefik.http.routers.invite-secure-external.service=invite"
+  #         ## Service Configuration
+  #         - "traefik.http.services.invite.loadbalancer.server.port=5690"
+  #         ## Middleware for HTTPS redirection
+  #         - "traefik.http.middlewares.invite-https-redirect.redirectscheme.scheme=https"
+  #         ## Authentik middleware
+  #         - "traefik.http.routers.invite-secure-internal.middlewares=middlewares-authentik@file"
+  #         - "traefik.http.routers.invite-secure-external.middlewares=middlewares-authentik@file"
+  #         # Network
+  #         - "traefik.swarm.network=proxy"
+  #       #HOMEPAGE
+  #         - "homepage.group=Media"
+  #         - "homepage.name=wizarr"
+  #         - "homepage.icon=wizarr.png"
+  #         - "homepage.href=https://invite.${DOMAIN}"
+  #       #PANGOLIN
+  #         - pangolin.public-resources.wizarr.name=Wizarr
+  #         - pangolin.public-resources.wizarr.protocol=http
+  #         - pangolin.public-resources.wizarr.full-domain=wizarr.${DOMAIN}
+  #         - pangolin.public-resources.wizarr.targets[0].method=https
+  #         - pangolin.public-resources.wizarr.targets[0].hostname=wizarr.${DOMAIN}
+  #         - pangolin.public-resources.wizarr.targets[0].port=443
+
+volumes:
+
+  media-data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/tank/media/data"
+  media-usenet:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/tank/media/data/usenet"
+
+secrets:
+  profilarr--api_key:
+    external: true
+  profilarr--oidc_client_secret:
+    external: true
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,117 @@
+services:
+  frontend:
+    image: ghcr.io/maathimself/mailflow-frontend:2.7.1
+    # volumes:
+    #   - ./certs:/etc/nginx/ssl
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO/dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - mailflow
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.mailflow.entrypoints=http"
+        - "traefik.http.routers.mailflow.rule=Host(`mailflow.${DOMAIN}`)"
+        - "traefik.http.middlewares.mailflow-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.mailflow.middlewares=mailflow-https-redirect"
+        - "traefik.http.routers.mailflow-secure.entrypoints=https"
+        - "traefik.http.routers.mailflow-secure.rule=Host(`mailflow.${DOMAIN}`)"
+        - "traefik.http.routers.mailflow-secure.tls=true"
+        - "traefik.http.routers.mailflow-secure.service=mailflow"
+        - "traefik.http.services.mailflow.loadbalancer.server.port=80"
+        - "traefik.swarm.network=proxy"
+        #HOMEPAGE
+        - "homepage.group=Personal"
+        - "homepage.name=mailflow"
+        - "homepage.icon=mailflow.png"
+        - "homepage.href=https://mailflow.${DOMAIN}"
+
+  backend:
+    image: ghcr.io/maathimself/mailflow-backend:2.7.1
+    extra_hosts:
+      - "db.${DOMAIN}:${PG_IP}"
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        export SESSION_SECRET=$$(cat /run/secrets/mailflow--session_secret)
+        export DB_PASSWORD=$$(cat /run/secrets/mailflow--db_password)
+        export ENCRYPTION_KEY=$$(cat /run/secrets/mailflow--encryption_key)
+        exec node src/index.js
+    secrets:
+      - mailflow--session_secret
+      - mailflow--db_password
+      - mailflow--encryption_key
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      APP_URL: https://mailflow.${DOMAIN}
+      FRONTEND_URL: https://mailflow.${DOMAIN}
+      DB_HOST: db.${DOMAIN}
+      DB_NAME: mailflow_db
+      DB_USER: mailflow_user
+      REDIS_URL: redis://redis:6379
+    networks:
+      - mailflow
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        order: stop-first
+        failure_action: rollback
+        delay: 10s
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--loglevel", "warning"]
+    # volumes:
+    #   - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - mailflow
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+
+secrets:
+  mailflow--session_secret:
+    external: true
+  mailflow--db_password:
+    external: true
+  mailflow--encryption_key:
+    external: true
+
+networks:
+  proxy:
+    external: true
+  mailflow:
+    driver: overlay

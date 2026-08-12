@@ -1,0 +1,379 @@
+services:
+  mqtt:
+    image: eclipse-mosquitto:2.0.22
+    networks:
+      - internal
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - /mnt/cephfs/app_data/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - /mnt/cephfs/app_data/mosquitto/config/pwfile:/mosquitto/config/pwfile
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 1883 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+        parallelism: 1
+      rollback_config:
+        order: stop-first
+        parallelism: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+      resources:
+        limits:
+          memory: 256M
+
+  homeassistant:
+    image: linuxserver/homeassistant:2026.8.1-ls237
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+      - HOST_HOSTNAME={{.Node.Hostname}}.localdomain #used for advertise_addr
+    volumes:
+      - /mnt/cephfs/app_data/hassio:/config
+#      - /etc/localtime:/etc/localtime:ro
+    ports:
+    #  - "5353:5353/udp" #mDNS
+    #  - "1900:1900/udp"   #UPnP SSDP
+     - target: 1400 #sonos
+       published: 1400
+       protocol: tcp
+       mode: host
+     - target: 1443 #sonos TTS
+       published: 1443
+       protocol: tcp
+       mode: host
+     - target: 5683  #unicast shelly
+       published: 5683
+       protocol: udp
+       mode: host
+    #  - target: 1900   #UPnP SSDP
+    #    published: 1900
+    #    protocol: udp
+    #    mode: host
+    #  - target: 5353   #mDNS
+    #    published: 5353
+    #    protocol: udp
+    #    mode: host
+    networks:
+      - internal
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.hassio.entrypoints=http"
+        - "traefik.http.routers.hassio.rule=Host(`hassio.${DOMAIN}`)"
+        - "traefik.http.middlewares.hassio-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.hassio.middlewares=hassio-https-redirect"
+        - "traefik.http.routers.hassio-secure.entrypoints=https"
+        - "traefik.http.routers.hassio-secure.rule=Host(`hassio.${DOMAIN}`)"
+        - "traefik.http.routers.hassio-secure.tls=true"
+        - "traefik.http.routers.hassio-secure.service=hassio"
+        - "traefik.http.services.hassio.loadbalancer.server.port=8123"
+        - "traefik.swarm.network=proxy"
+        #HOMEPAGE
+        - "homepage.group=Home Automation"
+        - "homepage.name=Home Assistant"
+        - "homepage.icon=home-assistant.png"
+        - "homepage.href=https://hassio.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=hassio.${DOMAIN}"
+
+
+  esphome:
+    image: ghcr.io/esphome/esphome:2026.7.4
+    command: ["dashboard", "/config", "--log-level", "warning"]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+      - ESPHOME_DASHBOARD_USE_PING=true #optional
+      - ESPHOME_DATA_DIR=/data #Environment variable for separated data from configs, you shouldn't need to change this
+      # Log level for the `esphome` CLI subprocesses the dashboard spawns
+      # (validate/compile output in the web UI panes). Does NOT affect docker
+      # logs — that's `--log-level warning` in `command:` (device-builder).
+      # - ESPHOME_LOG_LEVEL=WARNING
+      # - ESPHOME_USERNAME=${ESPHOME_USERNAME}
+      # - ESPHOME_PASSWORD=${ESPHOME_PASSWORD}
+      - ESPHOME_TRUSTED_DOMAINS=esphome.${DOMAIN}
+    volumes:
+       - /mnt/cephfs/app_data/esphome/config:/config 
+       - esphome-data:/data
+      #  - /dev/shm/esphome-cache:/cache
+    # tmpfs:
+    #   - /cache
+    ports:
+      # - 6052:6052 #Web UI
+      - target: 6123  # WebSocket logging
+        published: 6123
+        protocol: udp
+        mode: host
+      - "8266:8266"   # OTA updates
+      # - 5353:5353 #/udp #mdns
+    networks:
+      - internal
+      - proxy
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+        parallelism: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.esphome.entrypoints=http"
+        - "traefik.http.routers.esphome.rule=Host(`esphome.${DOMAIN}`)" 
+        - "traefik.http.middlewares.esphome-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.esphome.middlewares=esphome-https-redirect"
+        - "traefik.http.routers.esphome-secure.entrypoints=https"
+        - "traefik.http.routers.esphome-secure.rule=Host(`esphome.${DOMAIN}`)" 
+        - "traefik.http.routers.esphome-secure.tls=true"
+        - "traefik.http.routers.esphome-secure.service=esphome"
+        - "traefik.http.services.esphome.loadbalancer.server.port=6052" 
+        - "traefik.http.routers.esphome-secure.middlewares=middlewares-authentik@file" 
+        - "traefik.swarm.network=proxy"
+        #HOMEPAGE
+        - "homepage.group=Home Automation"
+        - "homepage.name=esphome"
+        - "homepage.icon=sh-esphome-light.png"
+        - "homepage.href=https://esphome.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=esphome.${DOMAIN}"
+
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:2.13.0
+    user: "${PUID}:${PGID}"
+    environment:
+      - TZ=${TZ}
+      - ZIGBEE2MQTT_CONFIG_ADVANCED_LOG_LEVEL=warning
+    volumes:
+      - /mnt/cephfs/app_data/zigbee2mqtt:/app/data
+    networks:
+      - internal
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9442"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "25"
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+        parallelism: 1
+      rollback_config:
+        order: stop-first
+        parallelism: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+      labels:
+        # Traefik
+        - "traefik.enable=true"
+        - "traefik.swarm.network=proxy"
+        - "traefik.http.routers.z2m.entrypoints=http"
+        - "traefik.http.routers.z2m.rule=Host(`z2m.${DOMAIN}`)"
+        - "traefik.http.routers.z2m.middlewares=z2m-https-redirect"
+        - "traefik.http.middlewares.z2m-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.z2m-secure.entrypoints=https"
+        - "traefik.http.routers.z2m-secure.rule=Host(`z2m.${DOMAIN}`)"
+        - "traefik.http.routers.z2m-secure.tls=true"
+        - "traefik.http.routers.z2m-secure.service=z2m"
+        - "traefik.http.routers.z2m-secure.middlewares=middlewares-authentik@file"
+        - "traefik.http.services.z2m.loadbalancer.server.port=9442"
+        # Homepage
+        - "homepage.group=Home Automation"
+        - "homepage.name=Z2M"
+        - "homepage.icon=zigbee2mqtt.png"
+        - "homepage.href=https://z2m.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=z2m.${DOMAIN}"
+
+  valetudopng:
+    image: ghcr.io/erkexzcx/valetudopng:v1.0.17
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+    volumes:
+      - /mnt/cephfs/app_data/valetudopng/config.yml:/config.yml:ro
+    # ports:
+    #   - 3038:3000
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
+
+  # nolongerevil:
+  #   image: ghcr.io/codykociemba/nolongerevil-selfhosted:1.0.1
+  #   ports:
+  #     - target: 8000
+  #       published: 8100
+  #       protocol: tcp
+  #       mode: ingress
+  #   environment:
+  #     - API_ORIGIN=http://nest.${DOMAIN}:8100
+  #     - SERVER_PORT=8000
+  #     - CONTROL_PORT=8082
+  #     - SQLITE3_DB_PATH=/data/database.sqlite
+  #     - DEBUG_LOGGING=false
+  #     - REQUIRE_DEVICE_PAIRING=false
+  #     - ENTRY_KEY_TTL_SECONDS=3600
+  #     - WEATHER_CACHE_TTL_MS=600000
+  #     # MQTT
+  #     - MQTT_HOST=mqtt #.${DOMAIN}
+  #     - MQTT_PORT=1883
+  #     - MQTT_USER=${MQTT_USER}
+  #     - MQTT_PASSWORD=${MQTT_PASSWORD}
+  #     - MQTT_TOPIC_PREFIX=nolongerevil
+  #     - MQTT_DISCOVERY_PREFIX=homeassistant
+  #   volumes:
+  #     - /mnt/cephfs/app_data/nolongerevil/data:/data
+  #   networks:
+  #     - proxy
+  #     - internal
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8082/health')\" || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 5s
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: any
+  #       delay: 10s
+  #     update_config:
+  #       order: stop-first
+  #       failure_action: rollback
+  #     placement:
+  #       max_replicas_per_node: 1
+  #     labels:
+  #       - "traefik.enable=true"
+  #       - "traefik.swarm.network=proxy"
+  #       # Thermostat - Control API / Dashboard (HTTPS for browser access)
+  #       - "traefik.http.routers.thermostat.entrypoints=http"
+  #       - "traefik.http.routers.thermostat.rule=Host(`thermostat.${DOMAIN}`)"
+  #       - "traefik.http.middlewares.thermostat-https-redirect.redirectscheme.scheme=https"
+  #       - "traefik.http.routers.thermostat.middlewares=thermostat-https-redirect"
+  #       - "traefik.http.routers.thermostat-secure.entrypoints=https"
+  #       - "traefik.http.routers.thermostat-secure.rule=Host(`thermostat.${DOMAIN}`)"
+  #       - "traefik.http.routers.thermostat-secure.tls=true"
+  #       - "traefik.http.routers.thermostat-secure.service=thermostat"
+  #       - "traefik.http.services.thermostat.loadbalancer.server.port=8082"
+  #       # - "traefik.http.routers.thermostat-secure.middlewares=middlewares-authentik@file"
+  #       # HOMEPAGE
+  #       - "homepage.group=Home Automation"
+  #       - "homepage.name=thermostat"
+  #       - "homepage.href=https://thermostat.${DOMAIN}"
+
+  # govee2mqtt:
+  #   image: ghcr.io/wez/govee2mqtt:2025.11.25-60a39bcc
+  #   environment:
+  #     - GOVEE_MQTT_HOST=mqtt
+  #     - GOVEE_MQTT_PORT=1883
+  #     - GOVEE_TEMPERATURE_SCALE=F
+  #     - RUST_LOG_STYLE=always
+  #     #- RUST_LOG=govee=trace
+  #     - TZ=${TZ}
+  #   networks:
+  #     - internal
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: any
+
+
+  # hyperhdr:
+  #   image: nocturno/hyper-hdr:21.0.0.0
+  #   ports:
+  #     # - "8090:8090"    # HTTP Web UI
+  #     # - "8092:8092"    # HTTPS Web UI
+  #     - "19444:19444"  # JSON Server
+  #     - "19400:19400"  # Flatbuffers Server
+  #     - "19445:19445"  # Protocol Buffers Server
+  #     - "19333:19333"  # Boblight Server
+  #     - target: 5568   # UDP RAW Receiver
+  #       published: 5568
+  #       protocol: udp
+  #       mode: host
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #   volumes:
+  #      - /home/nexus/local/hyperhdr/config:/config
+  #   networks:
+  #     - proxy
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: any
+  #     placement:
+  #       constraints:
+  #         - node.hostname == swarm-02
+  #     labels:
+  #       #TRAEFIK
+  #       - "traefik.enable=true"
+  #       - "traefik.http.routers.hyperhdr.entrypoints=http"
+  #       - "traefik.http.routers.hyperhdr.rule=Host(`hyperhdr.${DOMAIN}`)"
+  #       - "traefik.http.middlewares.hyperhdr-https-redirect.redirectscheme.scheme=https"
+  #       - "traefik.http.routers.hyperhdr.middlewares=hyperhdr-https-redirect"
+  #       - "traefik.http.routers.hyperhdr-secure.entrypoints=https"
+  #       - "traefik.http.routers.hyperhdr-secure.rule=Host(`hyperhdr.${DOMAIN}`)"
+  #       - "traefik.http.routers.hyperhdr-secure.tls=true"
+  #       - "traefik.http.routers.hyperhdr-secure.service=hyperhdr"
+  #       - "traefik.http.services.hyperhdr.loadbalancer.server.port=8090"
+  #       - "traefik.http.routers.hyperhdr-secure.middlewares=middlewares-authentik@file"
+  #       - "traefik.swarm.network=proxy"
+  #       #HOMEPAGE
+  #       - "homepage.group=Home Automation"
+  #       - "homepage.name=hyperhdr"
+  #       - "homepage.icon=hyperion.png"
+  #       - "homepage.href=https://hyperhdr.${DOMAIN}"
+
+
+volumes:
+  esphome-data:
+    driver: local
+
+networks:
+  internal:
+    driver: overlay  
+  proxy:
+    external: true

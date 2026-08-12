@@ -1,0 +1,54 @@
+services:
+  languagetool:
+    image: erikvl87/languagetool:6.8
+    volumes:
+      - /mnt/cephfs/app_data/languagetool/logback/logback.xml:/LanguageTool/logback.xml:ro
+      - ngrams_data:/ngrams:ro
+    environment:
+      - langtool_languageModel=/ngrams
+      - Java_Xms=512m
+      - Java_Xmx=1g
+      - langtool_pipelineCaching=true
+      - langtool_maxTextLength=50000
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--data", "language=en-US&text=a simple test", "http://localhost:8010/v2/check"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 2G #increase to 3G for improve latency
+        reservations:
+          memory: 1G
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.langtools.entrypoints=http"
+        - "traefik.http.routers.langtools.rule=Host(`langtools.${DOMAIN}`)"
+        - "traefik.http.middlewares.langtools-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.langtools.middlewares=langtools-https-redirect"
+        - "traefik.http.routers.langtools-secure.entrypoints=https"
+        - "traefik.http.routers.langtools-secure.rule=Host(`langtools.${DOMAIN}`)"
+        - "traefik.http.routers.langtools-secure.tls=true"
+        - "traefik.http.routers.langtools-secure.service=langtools"
+        - "traefik.http.services.langtools.loadbalancer.server.port=8010"
+        - "traefik.swarm.network=proxy"
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  ngrams_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,ro,nfsvers=4,hard,noatime
+      device: ":/mnt/ssdp1/languagetool/ngrams"

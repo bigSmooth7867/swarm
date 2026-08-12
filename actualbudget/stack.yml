@@ -1,0 +1,43 @@
+services:
+  actual_server:
+    image: actualbudget/actual-server:26.8.1
+    volumes:
+      - /home/nexus/local/actualbudget/data:/data
+      - /home/nexus/local/actualbudget/config/config.json:/app/config.json
+    healthcheck:
+      test: ['CMD-SHELL', 'node src/scripts/health-check.js']
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      restart_policy:
+        condition: any
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.actual-server.entrypoints=http"
+        - "traefik.http.routers.actual-server.rule=Host(`budget.${DOMAIN}`)"
+        - "traefik.http.middlewares.actual-server-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.actual-server.middlewares=actual-server-https-redirect"
+        - "traefik.http.routers.actual-server-secure.entrypoints=https"
+        - "traefik.http.routers.actual-server-secure.rule=Host(`budget.${DOMAIN}`)"
+        - "traefik.http.routers.actual-server-secure.tls=true"
+        - "traefik.http.routers.actual-server-secure.service=actual-server"
+        - "traefik.http.services.actual-server.loadbalancer.server.port=5006"
+        - "traefik.swarm.network=proxy"    
+        #HOMEPAGE
+        - homepage.group=Personal
+        - homepage.name=actual-budget
+        - homepage.icon=actual-budget.png
+        - homepage.href=https://budget.${DOMAIN}
+
+networks:
+  proxy:
+    external: true

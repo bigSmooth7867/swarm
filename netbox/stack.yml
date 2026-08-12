@@ -1,0 +1,236 @@
+x-netbox-common: &netbox-common
+  image: netboxcommunity/netbox:v4.5-4.0.2
+  environment:
+    # --- Database ---
+    DB_HOST: "db.${DOMAIN}"
+    DB_PORT: "5000"
+    DB_NAME: "netbox_db"
+    DB_USER: "netbox_user"
+    DB_SSLMODE: "require"
+    DB_WAIT_DEBUG: "1"
+    PGSSLCERT: "/nonexistent"
+    PGSSLKEY: "/nonexistent"
+
+    # --- Redis: tasks (shared instance on redisnet) ---
+    REDIS_HOST: "netbox-redis"
+    REDIS_PORT: "6379"
+    # REDIS_USERNAME: "netbox_user"
+    REDIS_DATABASE: "0"
+    # REDIS_SSL: "false"
+    # REDIS_KEY_PREFIX: "netbox:"
+
+    # --- Redis: cache (shared instance on redisnet) ---
+    REDIS_CACHE_HOST: "netbox-redis"
+    REDIS_CACHE_PORT: "6379"
+    # REDIS_CACHE_USERNAME: "netbox_cache"
+    REDIS_CACHE_DATABASE: "1"
+    # REDIS_CACHE_SSL: "false"
+    # REDIS_CACHE_KEY_PREFIX: "nbcache:"
+
+    # --- App ---
+    ALLOWED_HOSTS: "netbox.${DOMAIN} localhost"
+    CSRF_TRUSTED_ORIGINS: "https://netbox.${DOMAIN}"
+    BASE_PATH: ""
+    METRICS_ENABLED: "true"
+
+    # --- First-boot superuser (keep this local account as a break-glass!) ---
+    SUPERUSER_NAME: "admin"
+    SUPERUSER_EMAIL: "admin@${DOMAIN}"
+    SKIP_SUPERUSER: "false"
+
+    HOUSEKEEPING_INTERVAL: "86400"
+
+    # --- authentik OIDC ---
+    REMOTE_AUTH_ENABLED: "true"
+    REMOTE_AUTH_BACKEND: "social_core.backends.open_id_connect.OpenIdConnectAuth"
+    SOCIAL_AUTH_OIDC_OIDC_ENDPOINT: "https://auth.${DOMAIN}/application/o/netbox/"
+    SOCIAL_AUTH_OIDC_KEY: "8OTAWpKWwWOVNLMuaGy2SmpodXiDM7gNkr8Zhqe5"
+    SOCIAL_AUTH_OIDC_SCOPE: "openid profile email roles"
+    LOGOUT_REDIRECT_URL: "https://auth.${DOMAIN}/application/o/netbox/end-session/"
+
+  secrets:
+    - source: netbox--secret_key
+      target: secret_key
+    - source: netbox--pg_pass
+      target: db_password
+    - source: netbox--superuser_password
+      target: superuser_password
+    # - source: netbox--redis_password
+    #   target: redis_password
+    # - source: netbox--redis_cache_password
+    #   target: redis_cache_password
+    - source: netbox--oidc_secret
+      target: oidc_secret
+    - source: netbox--api_token_pepper_1
+      target: api_token_pepper_1
+
+  networks:
+    - netbox-internal
+    # - redisnet
+
+  volumes:
+    - /mnt/cephfs/app_data/netbox/media:/opt/netbox/netbox/media
+    - /mnt/cephfs/app_data/netbox/reports:/opt/netbox/netbox/reports
+    - /mnt/cephfs/app_data/netbox/scripts:/opt/netbox/netbox/scripts
+    - /mnt/cephfs/app_data/netbox/config/authentik.py:/etc/netbox/config/authentik.py:ro
+    - /mnt/cephfs/app_data/netbox/config/custom_pipeline.py:/opt/netbox/netbox/netbox/custom_pipeline.py:ro
+
+
+services:
+
+  netbox:
+    <<: *netbox-common
+    networks:
+      - netbox-internal
+      - proxy
+      # - redisnet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login/"]
+      start_period: 180s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+      placement:
+        max_replicas_per_node: 1
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.netbox.entrypoints=http"
+        - "traefik.http.routers.netbox.rule=Host(`netbox.${DOMAIN}`)"
+        - "traefik.http.middlewares.netbox-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.netbox.middlewares=netbox-https-redirect"
+        - "traefik.http.routers.netbox-secure.entrypoints=https"
+        - "traefik.http.routers.netbox-secure.rule=Host(`netbox.${DOMAIN}`)"
+        - "traefik.http.routers.netbox-secure.tls=true"
+        - "traefik.http.routers.netbox-secure.service=netbox"
+        - "traefik.http.services.netbox.loadbalancer.server.port=8080"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Administration"
+        - "homepage.name=NetBox"
+        - "homepage.icon=netbox.png"
+        - "homepage.href=https://netbox.${DOMAIN}"
+
+
+  netbox-worker:
+    <<: *netbox-common
+    command:
+      - /opt/netbox/venv/bin/python
+      - /opt/netbox/netbox/manage.py
+      - rqworker
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ps -ef | grep -v grep | grep -q rqworker"]
+      start_period: 60s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  netbox-housekeeping:
+    <<: *netbox-common
+    command:
+      - /opt/netbox/housekeeping.sh
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ps -ef | grep -v grep | grep -q housekeeping"]
+      start_period: 60s
+      interval: 60s
+      timeout: 5s
+      retries: 3
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  netbox-redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    networks:
+      - netbox-internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  netbox-internal:
+    driver: overlay
+    attachable: false
+  proxy:
+    external: true
+  # redisnet:
+  #   external: true
+
+
+secrets:
+  netbox--secret_key:
+    external: true
+  netbox--pg_pass:
+    external: true
+  netbox--superuser_password:
+    external: true
+  netbox--oidc_secret:
+    external: true
+  # netbox--redis_password:
+  #   external: true
+  # netbox--redis_cache_password:
+  #   external: true
+  netbox--api_token_pepper_1:
+    external: true

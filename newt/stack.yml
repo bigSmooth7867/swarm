@@ -1,0 +1,31 @@
+services:
+  newt:
+    image: fosrl/newt:1.15.0
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    environment:
+      - CONFIG_FILE=/run/secrets/pangolin-newt--config
+      - LOG_LEVEL=WARN
+      # - DOCKER_SOCKET=unix:///var/run/docker.sock 
+      # - BLUEPRINT_FILE=/blueprints/resources.yaml # if using a blueprint file
+      # - DOCKER_SOCKET=tcp://dockerproxy:2375
+    secrets:
+      - pangolin-newt--config
+    # volumes:
+    #     - /var/run/docker.sock:/var/run/docker.sock:ro
+    #     - /mnt/cephfs/pangolin/blueprints:/blueprints:ro # if using a blueprint file
+    networks:
+      # - dockerproxynet
+      - proxy
+
+networks:
+  # dockerproxynet:
+  #   external: true
+  proxy:
+    external: true
+
+secrets:
+  pangolin-newt--config:
+    external: true

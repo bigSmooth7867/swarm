@@ -1,0 +1,124 @@
+services:
+  yamtrack:
+    image: ghcr.io/fuzzygrim/yamtrack:0.26.1
+    secrets:
+      - yamtrack--pg_user
+      - yamtrack--pg_pass
+      - yamtrack--pg_db
+      - yamtrack--secret
+      - yamtrack--socialaccount_providers
+    environment:
+      - TZ=${TZ}
+      - REDIS_URL=redis://yamtrack-redis:6379
+      - DB_HOST=db.${DOMAIN}
+      - DB_PORT=5000
+      - DB_USER_FILE=/run/secrets/yamtrack--pg_user
+      - DB_NAME_FILE=/run/secrets/yamtrack--pg_db
+      - DB_PASSWORD_FILE=/run/secrets/yamtrack--pg_pass
+      - DB_SSL_MODE=require
+      - DB_SSL_CERT_MODE=disable
+      - SECRET_FILE=/run/secrets/yamtrack--secret
+      - CSRF=https://watchlist.${DOMAIN}
+      - URLS=https://watchlist.${DOMAIN}
+      - ALLOWED_HOSTS=watchlist.${DOMAIN}
+      - SOCIAL_PROVIDERS=allauth.socialaccount.providers.openid_connect
+      - SOCIALACCOUNT_PROVIDERS_FILE=/run/secrets/yamtrack--socialaccount_providers
+      - REGISTRATION=True
+      - REDIRECT_LOGIN_TO_SSO=False
+      - SOCIALACCOUNT_ONLY=True
+      - GUNICORN_CMD_ARGS=--access-logfile /dev/null
+    volumes:
+      - /mnt/cephfs/app_data/yamtrack/supervisord.conf:/etc/supervisord.conf:ro
+    networks:
+      - internal
+      - proxy
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.yamtrack.entrypoints=http"
+        - "traefik.http.routers.yamtrack.rule=Host(`watchlist.${DOMAIN}`)"
+        - "traefik.http.middlewares.yamtrack-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.yamtrack.middlewares=yamtrack-https-redirect"
+        - "traefik.http.routers.yamtrack-secure.entrypoints=https"
+        - "traefik.http.routers.yamtrack-secure.rule=Host(`watchlist.${DOMAIN}`)"
+        - "traefik.http.routers.yamtrack-secure.tls=true"
+        - "traefik.http.routers.yamtrack-secure.service=yamtrack"
+        - "traefik.http.services.yamtrack.loadbalancer.server.port=8000"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Media"
+        - "homepage.name=yamtrack"
+        - "homepage.icon=yamtrack.png"
+        - "homepage.href=https://watchlist.${DOMAIN}"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  yamtrack-redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+secrets:
+  yamtrack--pg_user:
+    external: true
+  yamtrack--pg_pass:
+    external: true
+  yamtrack--pg_db:
+    external: true
+  yamtrack--secret:
+    external: true
+  yamtrack--socialaccount_providers:
+    external: true
+
+networks:
+  internal:
+    driver: overlay
+  proxy:
+    external: true

@@ -1,0 +1,252 @@
+services:
+  paperless-webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.0.5
+    secrets:
+      - paperless--pg_user
+      - paperless--pg_pass
+      - paperless--pg_db
+      - paperless--paperless_socialaccount_providers
+      - paperless--secret_key
+    environment:
+      # Secrets via _FILE suffix
+      PAPERLESS_DBUSER_FILE: /run/secrets/paperless--pg_user
+      PAPERLESS_DBPASS_FILE: /run/secrets/paperless--pg_pass
+      PAPERLESS_DBNAME_FILE: /run/secrets/paperless--pg_db
+      # NOTE (v3): if OIDC login fails at the callback with "invalid_client",
+      # rotate this secret with "token_auth_method": "client_secret_basic"
+      # added to the provider's "settings" object.
+      PAPERLESS_SOCIALACCOUNT_PROVIDERS_FILE: /run/secrets/paperless--paperless_socialaccount_providers
+      PAPERLESS_SECRET_KEY_FILE: /run/secrets/paperless--secret_key
+      # PostgreSQL
+      PAPERLESS_DBENGINE: postgresql # v3: required, no longer inferred from DBHOST
+      PAPERLESS_DBHOST: db.${DOMAIN}
+      PAPERLESS_DBPORT: "5000"
+      PAPERLESS_DB_OPTIONS: "sslmode=require" # v3: replaces PAPERLESS_DBSSLMODE
+      # Redis:
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+      # Tika / Gotenberg
+      PAPERLESS_TIKA_ENABLED: "1"
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
+      # General
+      PAPERLESS_URL: https://paperless.${DOMAIN}
+      PAPERLESS_CONSUMER_RECURSIVE: "true"
+      # v3: duplicates are allowed by default; this restores the v2 behavior
+      # of rejecting them at consumption. Remove to use the new UI-flagging.
+      PAPERLESS_CONSUMER_DELETE_DUPLICATES: "true"
+      PAPERLESS_OCR_LANGUAGE: eng
+      PAPERLESS_TIME_ZONE: ${TZ}
+      # Auth
+      PAPERLESS_ENABLE_ALLAUTH: "true"
+      PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
+      PAPERLESS_DISABLE_REGULAR_LOGIN: "true"
+      PAPERLESS_AUTO_LOGIN: "true"
+      PAPERLESS_AUTO_CREATE: "true"
+      PAPERLESS_LOGOUT_REDIRECT_URL: "https://auth.${DOMAIN}/application/o/paperless/end-session/"
+      # NOTE (v3): allauth changed client-IP detection for login rate limiting.
+      # If logins start returning 403 behind Traefik, set:
+      #   PAPERLESS_TRUSTED_PROXIES: <traefik container network range>
+    volumes:
+      - paperless-data:/usr/src/paperless/data
+      - type: volume
+        source: paperless-media
+        target: /usr/src/paperless/media
+        volume:
+          nocopy: true
+    networks:
+      - paperless-internal
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.paperless.entrypoints=http"
+        - "traefik.http.routers.paperless.rule=Host(`paperless.${DOMAIN}`)"
+        - "traefik.http.middlewares.paperless-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.paperless.middlewares=paperless-https-redirect"
+        - "traefik.http.routers.paperless-secure.entrypoints=https"
+        - "traefik.http.routers.paperless-secure.rule=Host(`paperless.${DOMAIN}`)"
+        - "traefik.http.routers.paperless-secure.tls=true"
+        - "traefik.http.routers.paperless-secure.tls.certresolver=cloudflare"
+        - "traefik.http.routers.paperless-secure.service=paperless"
+        - "traefik.http.services.paperless.loadbalancer.server.port=8000"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - homepage.group=Personal
+        - homepage.name=paperless
+        - homepage.icon=paperless.png
+        - homepage.href=https://paperless.${DOMAIN}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  gotenberg:
+    image: gotenberg/gotenberg:8.35.0
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+      - "--log-level=warn"
+    networks:
+      - paperless-internal
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: stop-first
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  tika:
+    image: apache/tika:3.3.1.0
+    networks:
+      - paperless-internal
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: stop-first
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/9998' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  paperless-redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    networks:
+      - paperless-internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+volumes:
+  # data/ is node-local by design: search index (Tantivy as of v3, rebuilt
+  # automatically on first startup), classifier model, celery schedule — all
+  # rebuildable. If the service lands on a fresh node, run:
+  #   docker exec <webserver> document_index reindex
+  # (classifier retrains itself on schedule). No pin needed.
+  paperless-data: {}
+  # NOTE: swarm NFS volume definitions are immutable. If you change the
+  # options below, run `docker volume rm paperless_paperless-media` on every
+  # node that created it, then redeploy.
+  paperless-media:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/ssdp1/paperless/media"
+
+secrets:
+  paperless--pg_user:
+    external: true
+  paperless--pg_pass:
+    external: true
+  paperless--pg_db:
+    external: true
+  paperless--paperless_socialaccount_providers:
+    external: true
+  paperless--secret_key:
+    external: true
+
+networks:
+  paperless-internal:
+    driver: overlay
+    internal: true
+  proxy:
+    external: true

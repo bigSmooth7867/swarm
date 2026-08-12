@@ -1,0 +1,347 @@
+services:
+  # ============================================================
+  # Immich Server
+  # ============================================================
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:v3.1.0
+    user: "1000:1000"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - immich-upload:/usr/src/app/upload
+      - immich-scans:/mnt/scans:ro
+    secrets:
+      - immich--pg_pass
+      - immich--pg_user
+      - immich--pg_db
+    environment:
+      TZ: ${TZ}
+      # External Patroni PostgreSQL cluster
+      DB_HOSTNAME: db.${DOMAIN}
+      DB_PORT: "5000"
+      DB_PASSWORD_FILE: /run/secrets/immich--pg_pass
+      DB_USERNAME_FILE: /run/secrets/immich--pg_user
+      DB_DATABASE_NAME_FILE: /run/secrets/immich--pg_db
+      DB_SSL_MODE: require
+      # Dedicated Valkey (stack-internal, no auth, db 0)
+      REDIS_HOSTNAME: immich-redis
+      REDIS_PORT: "6379"
+      # IMMICH_LOG_LEVEL: warn
+      IMMICH_VERSION: v3
+    networks:
+      - internal
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.immich-server.entrypoints=http"
+        - "traefik.http.routers.immich-server.rule=Host(`photos.${DOMAIN}`)"
+        - "traefik.http.middlewares.immich-server-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.immich-server.middlewares=immich-server-https-redirect"
+        - "traefik.http.routers.immich-server-secure.entrypoints=https"
+        - "traefik.http.routers.immich-server-secure.rule=Host(`photos.${DOMAIN}`)"
+        - "traefik.http.routers.immich-server-secure.tls=true"
+        - "traefik.http.routers.immich-server-secure.service=immich-server"
+        - "traefik.http.services.immich-server.loadbalancer.server.port=2283"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Personal"
+        - "homepage.name=immich"
+        - "homepage.icon=immich.png"
+        - "homepage.href=https://photos.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=photos.${DOMAIN}"
+    logging:
+      options:
+        max-size: "10m"
+
+  # ============================================================
+  # Immich Redis (dedicated Valkey)
+  # ============================================================
+  immich-redis:
+    image: valkey/valkey:9@sha256:4963247afc4cd33c7d3b2d2816b9f7f8eeebab148d29056c2ca4d7cbc966f2d9
+    command:
+      - valkey-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================================
+  # Immich Power Tools
+  # ============================================================
+  # No native _FILE support — uses inline secret export
+  immich-power-tools:
+    image: ghcr.io/immich-power-tools/immich-power-tools:v0.22.0
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        export IMMICH_API_KEY=$$(cat /run/secrets/immich_power_tools--apikey_ipt)
+        export DB_USERNAME=$$(cat /run/secrets/immich--pg_user)
+        export DB_PASSWORD=$$(cat /run/secrets/immich--pg_pass)
+        export DB_DATABASE_NAME=$$(cat /run/secrets/immich--pg_db)
+        export GOOGLE_MAPS_API_KEY=$$(cat /run/secrets/immich_power_tools--google_maps_api_key)
+        export GEMINI_API_KEY=$$(cat /run/secrets/immich_power_tools--gemini_api_key)
+        exec docker-entrypoint.sh node server.js
+    secrets:
+      - immich--pg_pass
+      - immich--pg_user
+      - immich--pg_db
+      - immich_power_tools--apikey_ipt
+      - immich_power_tools--google_maps_api_key
+      - immich_power_tools--gemini_api_key
+    environment:
+      HOSTNAME: 0.0.0.0
+      IMMICH_URL: http://immich-server:2283
+      EXTERNAL_IMMICH_URL: https://photos.${DOMAIN}
+      # External Patroni PostgreSQL cluster
+      DB_HOST: db.${DOMAIN}
+      DB_PORT: "5000"
+      SECURE_COOKIE: "true"
+      PGSSLMODE: "require"
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      # Not working or implemented yet
+      # OAUTH_ENABLED: "true"
+      # OAUTH_BUTTON_TEXT: "Login with key"
+    networks:
+      - proxy
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.ipt.entrypoints=http"
+        - "traefik.http.routers.ipt.rule=Host(`ipt.${DOMAIN}`)"
+        - "traefik.http.middlewares.ipt-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.ipt.middlewares=ipt-https-redirect"
+        - "traefik.http.routers.ipt-secure.entrypoints=https"
+        - "traefik.http.routers.ipt-secure.rule=Host(`ipt.${DOMAIN}`)"
+        - "traefik.http.routers.ipt-secure.tls=true"
+        - "traefik.http.routers.ipt-secure.service=ipt"
+        - "traefik.http.services.ipt.loadbalancer.server.port=3000"
+        - "traefik.http.routers.ipt-secure.middlewares=middlewares-authentik@file"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Personal"
+        - "homepage.name=immich power tools"
+        - "homepage.icon=immich-power-tools.svg"
+        - "homepage.href=https://ipt.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=ipt.${DOMAIN}"
+    logging:
+      options:
+        max-size: "10m"
+
+  # ============================================================
+  # Immich Public Proxy
+  # ============================================================
+  immich-public-proxy:
+    image: alangrainger/immich-public-proxy:3.2.0
+    environment:
+      IMMICH_URL: http://immich-server:2283
+      PUBLIC_BASE_URL: https://pics.${DOMAIN}
+    volumes:
+      - /mnt/cephfs/app_data/immich-public-proxy/config/config.json:/app/config.json:ro
+    networks:
+      - proxy
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.immich-proxy.entrypoints=http"
+        - "traefik.http.routers.immich-proxy.rule=Host(`pics.${DOMAIN}`)"
+        - "traefik.http.middlewares.immich-proxy-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.immich-proxy.middlewares=immich-proxy-https-redirect"
+        - "traefik.http.routers.immich-proxy-secure.entrypoints=https"
+        - "traefik.http.routers.immich-proxy-secure.rule=Host(`pics.${DOMAIN}`)"
+        - "traefik.http.routers.immich-proxy-secure.tls=true"
+        - "traefik.http.routers.immich-proxy-secure.service=immich-proxy"
+        - "traefik.http.services.immich-proxy.loadbalancer.server.port=3000"
+        - "traefik.swarm.network=proxy"
+        # DNSWEAVER
+        - "dnsweaver.hostname=pics.${DOMAIN}"
+    logging:
+      options:
+        max-size: "10m"
+
+  # ============================================================
+  # Immich Frame
+  # ============================================================
+  immich-frame:
+    image: ghcr.io/immichframe/immichframe:v1.0.37.0
+    volumes:
+      - /mnt/cephfs/app_data/immich-frame/config:/app/Config
+    environment:
+      TZ: ${TZ}
+      LOG_LEVEL: Warning
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.immich-frame.entrypoints=http"
+        - "traefik.http.routers.immich-frame.rule=Host(`frame.${DOMAIN}`)"
+        - "traefik.http.middlewares.immich-frame-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.immich-frame.middlewares=immich-frame-https-redirect"
+        - "traefik.http.routers.immich-frame-secure.entrypoints=https"
+        - "traefik.http.routers.immich-frame-secure.rule=Host(`frame.${DOMAIN}`)"
+        - "traefik.http.routers.immich-frame-secure.tls=true"
+        - "traefik.http.routers.immich-frame-secure.service=immich-frame"
+        - "traefik.http.services.immich-frame.loadbalancer.server.port=8080"
+        - "traefik.swarm.network=proxy"
+        # DNSWEAVER
+        - "dnsweaver.hostname=frame.${DOMAIN}"
+    logging:
+      options:
+        max-size: "10m"
+
+  # ============================================================
+  # Immich Kiosk
+  # ============================================================
+  immich-kiosk:
+    image: ghcr.io/damongolding/immich-kiosk:0.42.0
+    tty: true
+    volumes:
+      - /mnt/cephfs/app_data/immich-kiosk/config.yaml:/config.yaml
+    environment:
+      LANG: "en_US"
+      TZ: ${TZ}
+    networks:
+      - internal
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.immich-kiosk.entrypoints=http"
+        - "traefik.http.routers.immich-kiosk.rule=Host(`kiosk.${DOMAIN}`)"
+        - "traefik.http.middlewares.immich-kiosk-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.immich-kiosk.middlewares=immich-kiosk-https-redirect"
+        - "traefik.http.routers.immich-kiosk-secure.entrypoints=https"
+        - "traefik.http.routers.immich-kiosk-secure.rule=Host(`kiosk.${DOMAIN}`)"
+        - "traefik.http.routers.immich-kiosk-secure.tls=true"
+        - "traefik.http.routers.immich-kiosk-secure.service=immich-kiosk"
+        - "traefik.http.services.immich-kiosk.loadbalancer.server.port=3000"
+        - "traefik.swarm.network=proxy"
+        # DNSWEAVER
+        - "dnsweaver.hostname=kiosk.${DOMAIN}"
+    logging:
+      options:
+        max-size: "10m"
+
+# ==============================================================
+# Volumes
+# ==============================================================
+volumes:
+  # NOTE: swarm NFS volume definitions are immutable. If you change the
+  # options below, run `docker volume rm immich_immich-upload` (and
+  # immich_immich-scans) on every node that created them, then redeploy.
+  immich-upload:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/ssdp1/immich"
+  immich-scans:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,ro,nfsvers=4,hard,noatime
+      device: ":/mnt/ssdp1/photos/1.scanned_photos/1.scans"
+
+# ==============================================================
+# Secrets (created by sync-secrets.sh from 1Password)
+# ==============================================================
+secrets:
+  immich--pg_pass:
+    external: true
+  immich--pg_user:
+    external: true
+  immich--pg_db:
+    external: true
+  immich_power_tools--apikey_ipt:
+    external: true
+  immich_power_tools--google_maps_api_key:
+    external: true
+  immich_power_tools--gemini_api_key:
+    external: true
+
+# ==============================================================
+# Networks
+# ==============================================================
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: overlay

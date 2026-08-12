@@ -1,0 +1,278 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Renovate Dashboard",
+  "labels": ["renovate"],
+  "configMigration": true,
+  "prHourlyLimit": 40,
+  "prConcurrentLimit": 40,
+  "branchConcurrentLimit": 40,
+  "internalChecksFilter": "none",
+  "internalChecksAsSuccess": true,
+  "platformAutomerge": false,
+  "automergeStrategy": "squash",
+  "hostRules": [
+    {
+      "matchHost": "docker.io",
+      "concurrentRequestLimit": 2
+    }
+  ],
+
+  "docker-compose": {
+    "managerFilePatterns": ["/(^|/)stack\\.yml$/"]
+  },
+
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "n8n via GitHub releases to filter pre-releases",
+      "managerFilePatterns": ["/(^|/)stack\\.yml$/"],
+      "matchStrings": ["image:\\s*ghcr\\.io/n8n-io/n8n:(?<currentValue>[^\\s]+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "n8n-io/n8n",
+      "extractVersionTemplate": "n8n@(?<version>.*)",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "Semaphore via GitHub releases - only latest/stable",
+      "managerFilePatterns": ["/(^|/)stack\\.yml$/"],
+      "matchStrings": ["image:\\s*(?:docker\\.io/)?semaphoreui/semaphore:(?<currentValue>v[^\\s]+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "semaphoreui/semaphore",
+      "versioningTemplate": "semver-coerced"
+    }
+  ],
+
+  "packageRules": [
+    {
+      "description": "=== Datasource dedupe === n8n: disable Docker datasource - using GitHub releases custom manager",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/n8n-io/n8n"],
+      "enabled": false
+    },
+    {
+      "description": "Semaphore: disable Docker datasource - using GitHub releases custom manager",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["semaphoreui/semaphore"],
+      "enabled": false
+    },
+
+    {
+      "description": "=== Versioning overrides === SearXNG: date-based versioning with commit hash",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["searxng/searxng"],
+      "versioning": "loose"
+    },
+    {
+      "description": "LinuxServer images: regex versioning for full tags",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["/linuxserver\\//"],
+      "versioning": "regex:^v?(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)((\\.|-r)(?<build>\\d+))?(-[a-f0-9]+)?-ls(?<revision>\\d+)$"
+    },
+
+    {
+      "description": "=== Version locks === PostgreSQL: lock to version 16",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["postgres"],
+      "allowedVersions": "/^16\\./"
+    },
+    {
+      "description": "MySQL: lock to version 8",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["mysql"],
+      "allowedVersions": "/^8\\./"
+    },
+    {
+      "description": "Redis: lock to version 7",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["redis"],
+      "allowedVersions": "/^7\\./"
+    },
+    {
+      "description": "MongoDB: lock to 8.0 LTS line (8.1+ are non-LTS; Unifi supports up to 8.0)",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["mongo"],
+      "allowedVersions": "/^8\\.0\\./"
+    },
+
+    {
+      "description": "=== Disabled updates === Immich dependencies: update with Immich releases only",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["valkey/valkey", "ghcr.io/immich-app/postgres", "tensorchord/pgvecto-rs"],
+      "enabled": false
+    },
+    {
+      "description": "Meilisearch: disable updates (manual upgrades only)",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["getmeili/meilisearch"],
+      "enabled": false
+    },
+
+    {
+      "description": "=== PR notes & changelog links === Immich server: check release notes for VectorChord/extension changes before merging",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/immich-app/immich-server"],
+      "labels": ["renovate", "check-vectorchord"],
+      "prBodyNotes": [
+        "⚠️ **VectorChord Check Required:** Before merging, review the release notes for any VectorChord or database extension changes. If the required VectorChord version has changed, update the extension on all 3 Patroni nodes (postgres-01/02/03) and perform a rolling restart BEFORE deploying this update. Then run on the leader:\n```sql\n\\c immich\nALTER EXTENSION vchord UPDATE;\nREINDEX INDEX face_index;\nREINDEX INDEX clip_index;\n```"
+      ]
+    },
+    {
+      "description": "Actual Budget - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["actualbudget/actual-server"],
+      "sourceUrl": "https://github.com/actualbudget/actual",
+      "prBodyNotes": ["[Release notes](https://github.com/actualbudget/actual/releases)"]
+    },
+    {
+      "description": "Autobase - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["autobase/console_api", "autobase/console_db", "autobase/console_ui"],
+      "sourceUrl": "https://github.com/vitabaks/autobase",
+      "prBodyNotes": ["[Release notes](https://github.com/vitabaks/autobase/releases)"]
+    },
+    {
+      "description": "Donut Sync - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["donutbrowser/donut-sync"],
+      "sourceUrl": "https://github.com/zhom/donutbrowser",
+      "prBodyNotes": ["[Release notes](https://github.com/zhom/donutbrowser/releases)"]
+    },
+    {
+      "description": "Filebrowser (gtsteffaniak) - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["gtstef/filebrowser"],
+      "sourceUrl": "https://github.com/gtsteffaniak/filebrowser",
+      "prBodyNotes": ["[Release notes](https://github.com/gtsteffaniak/filebrowser/releases)"]
+    },
+    {
+      "description": "Gotify - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["gotify/server"],
+      "sourceUrl": "https://github.com/gotify/server",
+      "prBodyNotes": ["[Release notes](https://github.com/gotify/server/releases)"]
+    },
+    {
+      "description": "Grafana Loki - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["grafana/loki"],
+      "sourceUrl": "https://github.com/grafana/loki",
+      "prBodyNotes": ["[Release notes](https://github.com/grafana/loki/releases)"]
+    },
+    {
+      "description": "iGotify Notification Assist - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/androidseb25/igotify-notification-assist"],
+      "sourceUrl": "https://github.com/androidseb25/iGotify-Notification-Assist",
+      "prBodyNotes": ["[Release notes](https://github.com/androidseb25/iGotify-Notification-Assist/releases)"]
+    },
+    {
+      "description": "Immich Drop - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/nasogaa/immich-drop"],
+      "sourceUrl": "https://github.com/NasoGaa/immich-drop",
+      "prBodyNotes": ["[Release notes](https://github.com/NasoGaa/immich-drop/releases)"]
+    },
+    {
+      "description": "Immich Kiosk - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/damongolding/immich-kiosk"],
+      "sourceUrl": "https://github.com/damongolding/immich-kiosk",
+      "prBodyNotes": ["[Release notes](https://github.com/damongolding/immich-kiosk/releases)"]
+    },
+    {
+      "description": "InfluxDB 3 Core - source + release-notes link (GitHub releases are sparse for v3)",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["influxdb"],
+      "sourceUrl": "https://github.com/influxdata/influxdb",
+      "prBodyNotes": ["[Release notes](https://docs.influxdata.com/influxdb3/core/release-notes/)"]
+    },
+    {
+      "description": "Maptiler - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["maptiler/tileserver-gl"],
+      "sourceUrl": "https://github.com/maptiler/tileserver-gl",
+      "prBodyNotes": ["[Release notes](https://github.com/maptiler/tileserver-gl/releases)"]
+    },
+    {
+      "description": "NetBird - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["netbirdio/netbird"],
+      "sourceUrl": "https://github.com/netbirdio/netbird",
+      "prBodyNotes": ["[Release notes](https://github.com/netbirdio/netbird/releases)"]
+    },
+    {
+      "description": "pgAdmin4 - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["dpage/pgadmin4"],
+      "sourceUrl": "https://github.com/pgadmin-org/pgadmin4",
+      "prBodyNotes": ["[Release notes](https://github.com/pgadmin-org/pgadmin4/releases)"]
+    },
+    {
+      "description": "vaultls - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/7ritn/vaultls"],
+      "sourceUrl": "https://github.com/7ritn/vaultls",
+      "prBodyNotes": ["[Release notes](https://github.com/7ritn/vaultls/releases)"]
+    },
+    {
+      "description": "wg-easy - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/wg-easy/wg-easy"],
+      "sourceUrl": "https://github.com/wg-easy/wg-easy",
+      "prBodyNotes": ["[Release notes](https://github.com/wg-easy/wg-easy/releases)"]
+    },
+    {
+      "description": "Wizarr - fix incorrect sourceUrl (OCI labels point to astral-sh/uv)",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/wizarrrr/wizarr"],
+      "sourceUrl": "https://github.com/wizarrrr/wizarr",
+      "prBodyNotes": ["[Release notes](https://github.com/wizarrrr/wizarr/releases)"]
+    },
+
+    {
+      "description": "=== PR labels by update type === Major updates: red flag for config-breaking potential",
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["major"]
+    },
+    {
+      "description": "Minor updates: skim the release notes",
+      "matchUpdateTypes": ["minor"],
+      "addLabels": ["minor"]
+    },
+    {
+      "description": "Patch updates: soaking toward automerge",
+      "matchUpdateTypes": ["patch"],
+      "addLabels": ["patch"]
+    },
+
+    {
+      "description": "=== Automerge policy (must stay last; later rules override) === Auto-merge patch updates after 3-day stability period",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "minimumReleaseAge": "3 days",
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
+      "description": "SearXNG: daily rolling builds - near-zero cooldown so patches automerge immediately (must be a positive value, not null/0: the stability check must exist and pass green for automerge to work in a repo with no CI)",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["searxng/searxng"],
+      "minimumReleaseAge": "30 minutes"
+    },
+    {
+      "description": "Critical infra: PRs only, no auto-merge (manual review required) - overrides patch automerge above",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "crowdsecurity/crowdsec",
+        "traefik",
+        "gitea/gitea",
+        "gitea/act_runner",
+        "ghcr.io/immich-app/immich-server",
+        "ghcr.io/wg-easy/wg-easy"
+      ],
+      "automerge": false
+    }
+  ]
+}

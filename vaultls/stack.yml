@@ -1,0 +1,60 @@
+services:
+  vaultls:
+    image: ghcr.io/7ritn/vaultls:v1.3.0
+    volumes:
+      - /mnt/cephfs/app_data/vaultls/data:/app/data
+    environment:
+      - VAULTLS_URL=https://vaultls.${DOMAIN}/
+      - VAULTLS_OIDC_AUTH_URL=https://auth.${DOMAIN}/application/o/vaultls/
+      - VAULTLS_OIDC_CALLBACK_URL=https://vaultls.${DOMAIN}/api/auth/oidc/callback
+      - VAULTLS_OIDC_ID=2Lfzq7N7k0oAs2kznMIWBP7GwWW0bC1DuAX71cXy
+      - VAULTLS_API_SECRET=/run/secrets/vaultls--api_secret
+      - VAULTLS_DB_SECRET=/run/secrets/vaultls--db_secret
+      - VAULTLS_OIDC_SECRET=/run/secrets/vaultls--oidc_secret
+      - VAULTLS_LOG_LEVEL=warn
+    secrets:
+      - vaultls--api_secret
+      - vaultls--db_secret
+      - vaultls--oidc_secret
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.vaultls.entrypoints=http"
+        - "traefik.http.routers.vaultls.rule=Host(`vaultls.${DOMAIN}`)"
+        - "traefik.http.middlewares.vaultls-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.vaultls.middlewares=vaultls-https-redirect"
+        - "traefik.http.routers.vaultls-secure.entrypoints=https"
+        - "traefik.http.routers.vaultls-secure.rule=Host(`vaultls.${DOMAIN}`)"
+        - "traefik.http.routers.vaultls-secure.tls=true"
+        - "traefik.http.routers.vaultls-secure.service=vaultls"
+        - "traefik.http.services.vaultls.loadbalancer.server.port=80"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - homepage.group=Administration
+        - homepage.name=vaultls
+        - homepage.icon=sh-vaultls.png
+        - homepage.href=https://vaultls.${DOMAIN}
+
+networks:
+  proxy:
+    external: true
+
+secrets:
+  vaultls--api_secret:
+    external: true
+  vaultls--db_secret:
+    external: true
+  vaultls--oidc_secret:
+    external: true

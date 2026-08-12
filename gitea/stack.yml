@@ -1,0 +1,194 @@
+services:
+  server:
+    image: gitea/gitea:1.27.1
+    secrets:
+      - gitea--pg_db
+      - gitea--pg_user
+      - gitea--pg_pass
+      - gitea--minio_access_key
+      - gitea--minio_secret_key
+    environment:
+      - USER_UID=${PUID}
+      - USER_GID=${PGID}
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__server__SSH_Port=2221
+      - GITEA__database__HOST=db.${DOMAIN}:5000
+      - GITEA__database__SSL_MODE=require
+      - GITEA__database__NAME__FILE=/run/secrets/gitea--pg_db
+      - GITEA__database__USER__FILE=/run/secrets/gitea--pg_user
+      - GITEA__database__PASSWD__FILE=/run/secrets/gitea--pg_pass
+      - GITEA__log__LEVEL=Warn
+      - GITEA__indexer__ISSUE_INDEXER_TYPE=db
+      # S3 (Garage) package storage
+      # NOTE: _0X2E_ encodes the dot -> writes to [storage.packages]
+      - GITEA__storage_0X2E_packages__STORAGE_TYPE=minio
+      - GITEA__storage_0X2E_packages__MINIO_ENDPOINT=s3.${DOMAIN}
+      - GITEA__storage_0X2E_packages__MINIO_USE_SSL=true
+      - GITEA__storage_0X2E_packages__MINIO_ACCESS_KEY_ID__FILE=/run/secrets/gitea--minio_access_key
+      - GITEA__storage_0X2E_packages__MINIO_SECRET_ACCESS_KEY__FILE=/run/secrets/gitea--minio_secret_key
+      - GITEA__storage_0X2E_packages__MINIO_BUCKET=gitea-packages
+      - GITEA__storage_0X2E_packages__MINIO_LOCATION=us-east-1
+      - GITEA__storage_0X2E_packages__MINIO_BUCKET_LOOKUP=path
+    volumes:
+      - /mnt/cephfs/app_data/gitea/data:/data
+      - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:3000/api/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    ports:
+      - target: 22
+        published: 2221
+        protocol: tcp
+        mode: ingress
+    networks:
+      - internal
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.gitea.entrypoints=http"
+        - "traefik.http.routers.gitea.rule=Host(`gitea.${DOMAIN}`)"
+        - "traefik.http.middlewares.gitea-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.gitea.middlewares=gitea-https-redirect"
+        - "traefik.http.routers.gitea-secure.entrypoints=https"
+        - "traefik.http.routers.gitea-secure.rule=Host(`gitea.${DOMAIN}`)"
+        - "traefik.http.routers.gitea-secure.tls=true"
+        - "traefik.http.routers.gitea-secure.service=gitea"
+        - "traefik.http.services.gitea.loadbalancer.server.port=3000"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Administration"
+        - "homepage.name=gitea"
+        - "homepage.icon=gitea.png"
+        - "homepage.href=https://gitea.${DOMAIN}/user/login"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  runner:
+    image: gitea/runner:2.2.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/cephfs/app_data/gitea/runner/config.yaml:/config.yaml:ro
+      - /mnt/cephfs/app_data/gitea/runner/data:/data #dont need to bind mount it. need to confirm
+    environment:
+      - TZ=${TZ}
+      - CONFIG_FILE=/config.yaml
+      - GITEA_INSTANCE_URL=http://gitea_server:3000
+      - GITEA_RUNNER_NAME=srv-swarm
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  runner-new:
+    image: gitea/runner:3.1.0
+    hostname: "runner-{{.Node.Hostname}}"
+    environment:
+      - TZ=${TZ}
+      # - GITEA_INSTANCE_URL=http://gitea_server:3000
+      - GITEA_INSTANCE_URL=https://gitea.${DOMAIN}
+      - GITEA_RUNNER_REGISTRATION_TOKEN_FILE=/run/secrets/gitea--global_runner_token
+      - GITEA_RUNNER_NAME=swarm-amd64
+      - GITEA_RUNNER_EPHEMERAL=true
+      - GITEA_RUNNER_LABELS=ubuntu-latest:docker://catthehacker/ubuntu:act-latest,linux-amd64:docker://catthehacker/ubuntu:act-latest
+    volumes:
+      # Each replica mounts ITS OWN node's daemon - job containers and
+      # pulled images land on whichever node ran the job
+      - /var/run/docker.sock:/var/run/docker.sock
+    secrets:
+      - gitea--global_runner_token
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      # just one runner for now
+      # mode: global
+      # restart_policy:
+      #   condition: any
+      #   delay: 3s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+secrets:
+  gitea--pg_db:
+    external: true
+  gitea--pg_user:
+    external: true
+  gitea--pg_pass:
+    external: true
+  gitea--minio_access_key:
+    external: true
+  gitea--minio_secret_key:
+    external: true
+  gitea--global_runner_token:
+    external: true
+
+networks:
+  internal:
+    driver: overlay
+  proxy:
+    external: true

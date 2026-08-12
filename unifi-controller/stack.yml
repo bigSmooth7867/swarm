@@ -1,0 +1,151 @@
+services:
+  unifi-network-application:
+    image: linuxserver/unifi-network-application:10.5.67-ls141
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - FILE__MONGO_USER=/run/secrets/unifi-controller--mongo_user
+      - FILE__MONGO_PASS=/run/secrets/unifi-controller--mongo_pass
+      - MONGO_HOST=unifi-db
+      - MONGO_PORT=27017
+      - MONGO_DBNAME=unifi
+      - MONGO_AUTHSOURCE=admin
+      - MEM_LIMIT=1024
+      - MEM_STARTUP=1024
+    volumes:
+      - /mnt/cephfs/app_data/unifi-controller:/config
+    ports:
+      # 8443 handled by Traefik
+      - target: 3478
+        published: 3478
+        protocol: udp
+        mode: host
+      - target: 10001
+        published: 10001
+        protocol: udp
+        mode: host
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
+      - target: 1900
+        published: 1900
+        protocol: udp
+        mode: host
+      # Port 6789 conflicts with ceph-mon - uncomment if needed for mobile throughput test
+      # - target: 6789
+      #   published: 6789
+      #   protocol: tcp
+      #   mode: host
+      - target: 5514
+        published: 5514
+        protocol: udp
+        mode: host
+    networks:
+      - internal
+      - proxy
+    secrets:
+      - unifi-controller--mongo_user
+      - unifi-controller--mongo_pass
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      resources:
+        limits:
+          memory: 1536M
+        reservations:
+          memory: 1024M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.unifi.entrypoints=http"
+        - "traefik.http.routers.unifi.rule=Host(`unifi.${DOMAIN}`)"
+        - "traefik.http.middlewares.unifi-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.unifi.middlewares=unifi-https-redirect"
+        - "traefik.http.routers.unifi-secure.entrypoints=https"
+        - "traefik.http.routers.unifi-secure.rule=Host(`unifi.${DOMAIN}`)"
+        - "traefik.http.routers.unifi-secure.tls=true"
+        - "traefik.http.routers.unifi-secure.service=unifi"
+        - "traefik.http.services.unifi.loadbalancer.server.port=8443"
+        - "traefik.http.services.unifi.loadbalancer.server.scheme=https"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Administration"
+        - "homepage.name=unifi"
+        - "homepage.icon=unifi.png"
+        - "homepage.href=https://unifi.${DOMAIN}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  unifi-db:
+    image: mongo:8.0.29
+    command: ["mongod", "--quiet", "--wiredTigerEngineConfigString=verbose=[]"]
+    # command: ["mongod", "--quiet"]
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME_FILE=/run/secrets/unifi-controller--root_user
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/unifi-controller--root_pass
+    volumes:
+      - /home/nexus/docker-resources/unifi-db:/data/db
+      - /home/nexus/docker-resources/unifi-db-init/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh:ro
+    networks:
+      - internal
+    secrets:
+      - unifi-controller--root_user
+      - unifi-controller--root_pass
+      - unifi-controller--mongo_user
+      - unifi-controller--mongo_pass
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+
+secrets:
+  unifi-controller--mongo_user:
+    external: true
+  unifi-controller--mongo_pass:
+    external: true
+  unifi-controller--root_user:
+    external: true
+  unifi-controller--root_pass:
+    external: true
+
+networks:
+  internal:
+    driver: overlay
+    internal: true
+  proxy:
+    external: true

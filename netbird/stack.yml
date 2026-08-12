@@ -1,0 +1,22 @@
+services:
+  netbird:
+    image: netbirdio/netbird:0.76.3 #rootless
+    hostname: srv-swarm-01
+    entrypoint: /bin/sh
+    command: >
+      -c 'export NB_SETUP_KEY=$$(cat /run/secrets/netbird--nb_setup_key) && exec /usr/local/bin/netbird-entrypoint.sh'
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - NB_HOSTNAME=swarm-cluster
+      - NB_LOG_LEVEL=warn
+    secrets:
+      - netbird--nb_setup_key
+    volumes:
+      - /mnt/cephfs/app_data/netbird-client:/var/lib/netbird
+    deploy:
+      replicas: 1
+
+secrets:
+  netbird--nb_setup_key:
+    external: true

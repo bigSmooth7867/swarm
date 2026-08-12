@@ -1,0 +1,172 @@
+services:
+  apprise-api:
+    image: caronc/apprise:v1.5.1
+    environment:
+      # - PUID=${PUID}
+      # - PGID=${PGID}
+      # - APPRISE_CONFIG_LOCK=yes
+      - APPRISE_STATEFUL_MODE=simple
+      - APPRISE_WORKER_COUNT=1
+      # - APPRISE_PLUGIN_PATHS=/plugin
+      # - TZ=${TZ}
+      - LOG_LEVEL=WARNING
+      # - DEBUG=yes 
+    volumes:
+      - /mnt/cephfs/app_data/apprise/config:/config
+      - /mnt/cephfs/app_data/apprise/etc/nginx/override.conf:/etc/nginx/location-override.conf:ro 
+      - /mnt/cephfs/app_data/apprise/etc/nginx/apprise_api.htpasswd:/etc/nginx/.htpasswd:ro
+      - /mnt/cephfs/app_data/apprise/plugin:/plugin
+      - /mnt/cephfs/app_data/apprise/attach:/attach 
+    # ports:
+    #   - 8000:8000
+    networks:
+      - proxy
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.apprise.entrypoints=http"
+        - "traefik.http.routers.apprise.rule=Host(`apprise.${DOMAIN}`)"
+        - "traefik.http.middlewares.apprise-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.apprise.middlewares=apprise-https-redirect"
+        - "traefik.http.routers.apprise-secure.entrypoints=https"
+        - "traefik.http.routers.apprise-secure.rule=Host(`apprise.${DOMAIN}`)" 
+        - "traefik.http.routers.apprise-secure.tls=true"
+        - "traefik.http.routers.apprise-secure.service=apprise"
+        - "traefik.http.services.apprise.loadbalancer.server.port=8000"
+        # - "traefik.http.routers.apprise-secure.middlewares=middlewares-authentik@file" #add this to any container you want to use the Authentik web proxy
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - homepage.group=Administration
+        - homepage.name=apprise
+        - homepage.icon=apprise.png
+        - homepage.href=https://apprise.${DOMAIN}
+
+
+  mailrise:
+    image: yoryan/mailrise:latest@sha256:0b8b1ce3447c83b625c9e8896cd9c3db0205590f92ce4d4adaae69729830f52b
+    # ports:
+    #   - '8025:8025' # Exposes port 8025 for Mailrise's SMTP server
+    volumes:
+      - /mnt/cephfs/app_data/mailrise/mailrise.conf:/etc/mailrise.conf # Mounts your Mailrise configuration file
+    networks:
+      - proxy
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.tcp.routers.mailrise.rule=HostSNI(`*`)"
+        - "traefik.tcp.routers.mailrise.tls=true"
+        # - "traefik.tcp.routers.mailrise.tls.certresolver=cloudflare"
+        - "traefik.tcp.routers.mailrise.tls.domains[0].main=mailrise.${DOMAIN}"
+        - "traefik.tcp.routers.mailrise.tls.domains[0].sans="
+        # - "traefik.tcp.routers.mailrise.service=mailrise-service"
+        - "traefik.tcp.routers.mailrise.entrypoints=mailsecure"
+        - "traefik.tcp.services.mailrise.loadbalancer.server.port=8025" # don't think i need it
+        - "traefik.swarm.network=proxy"
+
+  gotify:
+    image: gotify/server:2.9.1
+    hostname: gotify
+    volumes:
+      - /mnt/cephfs/app_data/gotify/data:/app/data
+      - /mnt/cephfs/app_data/gotify/config/config.yml:/etc/gotify/config.yml:ro
+    environment:
+      - TZ=${TZ}
+    networks:
+      - proxy
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.gotify.entrypoints=http"
+        - "traefik.http.routers.gotify.rule=Host(`gotify.${DOMAIN}`)"
+        - "traefik.http.middlewares.gotify-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.gotify.middlewares=gotify-https-redirect"
+        - "traefik.http.routers.gotify-secure.entrypoints=https"
+        - "traefik.http.routers.gotify-secure.rule=Host(`gotify.${DOMAIN}`)"
+        - "traefik.http.routers.gotify-secure.tls=true"
+        - "traefik.http.routers.gotify-secure.service=gotify"
+        - "traefik.http.services.gotify.loadbalancer.server.port=80"
+#      - "traefik.http.routers.gotify-secure.middlewares=middlewares-authentik@file" #add this to any container you want to use the Authentik web proxy
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - homepage.group=Administration
+        - homepage.name=gotify
+        - homepage.icon=gotify.png
+        - homepage.href=https://gotify.${DOMAIN}
+
+
+  igotify:
+    hostname: igotify
+    image: ghcr.io/androidseb25/igotify-notification-assist:v1.5.1.3
+    # ports:
+    #   - "8681:8080"
+    #environment:                 # option environment see above note
+    #  GOTIFY_URLS:          ''
+    #  GOTIFY_CLIENT_TOKENS: ''
+    #  SECNTFY_TOKENS:       ''
+    volumes:
+      - /home/nexus/local/igotify/api-data:/app/data
+    networks:
+      - proxy
+    deploy:
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.igotify.entrypoints=http"
+        - "traefik.http.routers.igotify.rule=Host(`igotify.${DOMAIN}`)"
+        - "traefik.http.middlewares.igotify-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.igotify.middlewares=igotify-https-redirect"
+        - "traefik.http.routers.igotify-secure.entrypoints=https"
+        - "traefik.http.routers.igotify-secure.rule=Host(`igotify.${DOMAIN}`)"
+        - "traefik.http.routers.igotify-secure.tls=true"
+        - "traefik.http.routers.igotify-secure.service=igotify"
+        - "traefik.http.services.igotify.loadbalancer.server.port=8080"
+#      - "traefik.http.routers.igotify-secure.middlewares=middlewares-authentik@file" #add this to any container you want to use the Authentik web proxy
+        - "traefik.swarm.network=proxy"
+
+
+  bark-server:
+    image: finab/bark-server:v2.3.5
+    volumes:
+      - /home/nexus/local/bark/data:/data
+    # ports:
+    #   - "5457:8080"
+    command: bark-server --max-apns-client-count 4
+    networks:
+      - proxy
+    deploy:
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      labels:
+      #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.bark.entrypoints=http"
+        - "traefik.http.routers.bark.rule=Host(`bark.${DOMAIN}`)" 
+        - "traefik.http.middlewares.bark-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.bark.middlewares=bark-https-redirect"
+        - "traefik.http.routers.bark-secure.entrypoints=https"
+        - "traefik.http.routers.bark-secure.rule=Host(`bark.${DOMAIN}`)" 
+        - "traefik.http.routers.bark-secure.tls=true"
+        - "traefik.http.routers.bark-secure.service=bark"
+        - "traefik.http.services.bark.loadbalancer.server.port=8080" 
+        - "traefik.swarm.network=proxy"
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,103 @@
+services:
+  influxdb3-core:
+    image: influxdb:3.11.0-core
+    ports:
+      - "8181:8181"
+    command:
+      - influxdb3
+      - serve
+      - --node-id=node0
+      - --object-store=file
+      - --data-dir=/var/lib/influxdb3/data
+      - --plugin-dir=/var/lib/influxdb3/plugins
+      - --disable-authz=health,ping
+    environment:
+      - INFLUXDB3_LOG_FILTER=warn
+      - INFLUXDB3_UNSET_VARS=LOG_FILTER
+    volumes:
+      - /home/nexus/docker-resources/influxdb3/data:/var/lib/influxdb3/data
+      - /home/nexus/docker-resources/influxdb3/plugins:/var/lib/influxdb3/plugins
+    networks:
+      - proxy
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8181/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      restart_policy:
+        condition: any
+        delay: 5s
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.influxdb.entrypoints=http"
+        - "traefik.http.routers.influxdb.rule=Host(`influxdb.${DOMAIN}`)"
+        - "traefik.http.middlewares.influxdb-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.influxdb.middlewares=influxdb-https-redirect"
+        - "traefik.http.routers.influxdb-secure.entrypoints=https"
+        - "traefik.http.routers.influxdb-secure.rule=Host(`influxdb.${DOMAIN}`)"
+        - "traefik.http.routers.influxdb-secure.tls=true"
+        - "traefik.http.routers.influxdb-secure.service=influxdb"
+        - "traefik.http.services.influxdb.loadbalancer.server.port=8181"
+        - "traefik.swarm.network=proxy"
+
+  influxdb3-explorer:
+    image: influxdata/influxdb3-ui:1.9.0
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - "export SESSION_SECRET_KEY=$$(cat /run/secrets/influxdb3--session_secret_key) && exec ./entrypoint.sh --mode=admin"
+    # ports:
+    #   - "8888:80"
+    volumes:
+      - /home/nexus/docker-resources/influxdb3/explorer/db:/db:rw
+      - /home/nexus/docker-resources/influxdb3/explorer/config:/app-root/config:ro
+    networks:
+      - proxy
+      - internal
+    secrets:
+      - influxdb3--session_secret_key
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      restart_policy:
+        condition: any
+        delay: 5s
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.influxdbui.entrypoints=http"
+        - "traefik.http.routers.influxdbui.rule=Host(`influxdbui.${DOMAIN}`)"
+        - "traefik.http.middlewares.influxdbui-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.influxdbui.middlewares=influxdbui-https-redirect"
+        - "traefik.http.routers.influxdbui-secure.entrypoints=https"
+        - "traefik.http.routers.influxdbui-secure.rule=Host(`influxdbui.${DOMAIN}`)"
+        - "traefik.http.routers.influxdbui-secure.tls=true"
+        - "traefik.http.routers.influxdbui-secure.service=influxdbui"
+        - "traefik.http.services.influxdbui.loadbalancer.server.port=8080"
+        - "traefik.http.routers.influxdbui-secure.middlewares=middlewares-authentik@file"
+        - "traefik.swarm.network=proxy"
+        #HOMEPAGE
+        - "homepage.group=Administration"
+        - "homepage.name=influxdb"
+        - "homepage.icon=influxdb.png"
+        - "homepage.href=https://influxdbui.${DOMAIN}"
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: overlay
+    internal: true
+
+secrets:
+  influxdb3--session_secret_key:
+    external: true

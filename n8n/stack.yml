@@ -1,0 +1,93 @@
+services:
+  n8n:
+    image: ghcr.io/n8n-io/n8n:2.33.7
+    secrets:
+      - n8n--pg_db
+      - n8n--pg_user
+      - n8n--pg_pass
+      - n8n--encryption_key
+      - n8n--oidc_client_secret
+    volumes:
+      - /mnt/cephfs/app_data/n8n/n8n_storage:/home/node/.n8n
+      - /mnt/cephfs/app_data/n8n/files:/files
+      - /mnt/cephfs/app_data/n8n/plugins/hooks.js:/hooks.js:ro
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        export OIDC_CLIENT_SECRET=$$(cat /run/secrets/n8n--oidc_client_secret)
+        exec /docker-entrypoint.sh
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: db.${DOMAIN}
+      DB_POSTGRESDB_PORT: "5000"
+      DB_POSTGRESDB_DATABASE_FILE: /run/secrets/n8n--pg_db
+      DB_POSTGRESDB_USER_FILE: /run/secrets/n8n--pg_user
+      DB_POSTGRESDB_PASSWORD_FILE: /run/secrets/n8n--pg_pass
+      DB_POSTGRESDB_SSL_ENABLED: "true"
+      DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED: "false"
+      N8N_ENCRYPTION_KEY_FILE: /run/secrets/n8n--encryption_key
+      GENERIC_TIMEZONE: ${TZ}
+      TZ: ${TZ}
+      N8N_EDITOR_BASE_URL: https://n8n.${DOMAIN}
+      WEBHOOK_URL: https://n8n.${DOMAIN}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_TRUST_PROXY: "true"
+      N8N_PROXY_HOPS: "1"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_LOG_LEVEL: warn
+      # OIDC (n8n-oidc community project)
+      EXTERNAL_HOOK_FILES: /hooks.js
+      OIDC_CLIENT_ID: vPvowsUy4WpBMjEsaFPo4ycDnvEdnbDsNxQcTr6w
+      OIDC_ISSUER_URL: https://auth.${DOMAIN}/application/o/n8n/
+      OIDC_REDIRECT_URI: https://n8n.${DOMAIN}/auth/oidc/callback
+      N8N_ADDITIONAL_NON_UI_ROUTES: auth
+      EXTERNAL_FRONTEND_HOOKS_URLS: /assets/oidc-frontend-hook.js
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.n8n.entrypoints=http"
+        - "traefik.http.routers.n8n.rule=Host(`n8n.${DOMAIN}`)"
+        - "traefik.http.middlewares.n8n-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.n8n.middlewares=n8n-https-redirect"
+        - "traefik.http.routers.n8n-secure.entrypoints=https"
+        - "traefik.http.routers.n8n-secure.rule=Host(`n8n.${DOMAIN}`)"
+        - "traefik.http.routers.n8n-secure.tls=true"
+        - "traefik.http.routers.n8n-secure.service=n8n"
+        - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+        - "traefik.swarm.network=proxy"
+        - homepage.group=Personal
+        - homepage.name=n8n
+        - homepage.icon=n8n.png
+        - homepage.href=https://n8n.${DOMAIN}
+    logging:
+      options:
+        max-size: "10m"
+
+secrets:
+  n8n--pg_db:
+    external: true
+  n8n--pg_user:
+    external: true
+  n8n--pg_pass:
+    external: true
+  n8n--encryption_key:
+    external: true
+  n8n--oidc_client_secret:
+    external: true
+
+networks:
+  proxy:
+    external: true

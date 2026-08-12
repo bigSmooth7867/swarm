@@ -1,0 +1,53 @@
+services:
+  dnsweaver:
+    image: ghcr.io/maxfield-allison/dnsweaver:v2.7.2
+    environment:
+      - DNSWEAVER_SOURCES=dnsweaver
+      - DNSWEAVER_DOCKER_HOST=tcp://dockerproxy:2375
+      - DNSWEAVER_INSTANCES=internal
+      - DNSWEAVER_INTERNAL_TYPE=technitium
+      - DNSWEAVER_INTERNAL_URL=https://dns01.${DOMAIN}:53443
+      - DNSWEAVER_INTERNAL_TOKEN_FILE=/run/secrets/dnsweaver--technitium_token
+      - DNSWEAVER_INTERNAL_ZONE=${DOMAIN}
+      - DNSWEAVER_INTERNAL_RECORD_TYPE=A
+      - DNSWEAVER_INTERNAL_TARGET=${INTERNAL_TARGET}
+      - DNSWEAVER_INTERNAL_DOMAINS=*.${DOMAIN}
+      - DNSWEAVER_INTERNAL_AUTO_HTTPS_RECORDS=false
+      - DNSWEAVER_INTERNAL_TTL=3600
+      # - DNSWEAVER_DRY_RUN=true
+      - DNSWEAVER_LOG_LEVEL=warn
+    networks:
+      - dockerproxynet
+    secrets:
+      - dnsweaver--technitium_token
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager        
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 0
+      update_config:
+        parallelism: 1
+        delay: 10s
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 32M
+
+secrets:
+  dnsweaver--technitium_token:
+    external: true                      
+networks:
+  dockerproxynet:
+    external: true

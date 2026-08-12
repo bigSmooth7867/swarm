@@ -1,0 +1,104 @@
+services:
+  searxng:
+    image: searxng/searxng:2026.8.12-54613defc
+    user: "${PUID}:${PGID}"
+    volumes:
+      - /mnt/cephfs/app_data/searxng:/etc/searxng:rw
+    environment:
+      - UWSGI_WORKERS=4
+      - UWSGI_THREADS=4
+      - SEARXNG_BASE_URL=https://search.${DOMAIN}/
+    cap_drop:
+      - ALL
+    # cap_add:
+    #   - CHOWN
+    #   - SETGID
+    #   - SETUID
+    # healthcheck:
+    #   test: ["CMD", "wget", "-q", "--spider", "--proxy=off", "http://localhost:8080/healthz"]
+    #   interval: 30s
+    #   timeout: 5s
+    #   retries: 3
+    #   start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+    networks:
+      - proxy
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0
+        window: 120s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.searxng.entrypoints=http"
+        - "traefik.http.routers.searxng.rule=Host(`search.${DOMAIN}`)"
+        - "traefik.http.middlewares.searxng-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.searxng.middlewares=searxng-https-redirect"
+        - "traefik.http.routers.searxng-secure.entrypoints=https"
+        - "traefik.http.routers.searxng-secure.rule=Host(`search.${DOMAIN}`)"
+        - "traefik.http.routers.searxng-secure.tls=true"
+        - "traefik.http.routers.searxng-secure.service=searxng"
+        - "traefik.http.services.searxng.loadbalancer.server.port=8080"
+        ## For services that REQUIRE mTLS
+        # - "traefik.http.routers.searxng-secure.tls.options=mtls@file"
+        ## For services where mTLS is OPTIONAL
+        # - "traefik.http.routers.searxng-secure.tls.options=mtls-optional@file"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Personal"
+        - "homepage.name=searxng"
+        - "homepage.icon=searxng.png"
+        - "homepage.href=https://search.${DOMAIN}"
+
+  searxng-redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  internal:
+    driver: overlay
+    internal: true
+  proxy:
+    external: true

@@ -1,0 +1,52 @@
+services:
+  filebrowser:
+    image: gtstef/filebrowser:1.5.1-stable
+    # Optionally run as non-root filebrowser user
+    #user: filebrowser
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health.php"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+    environment:
+      FILEBROWSER_CONFIG: "data/config.yaml"
+      TZ: "${TZ}"
+    volumes:
+      - '/mnt/truenas/tank/roms/downloads/jdownloader/to_print:/folder' # Never mount root "/" directory to docker, always choose a sub-folder with your data.
+      - '/home/nexus/local/filebrowser/data:/home/filebrowser/data' # mount the data folder you created with the config file.
+      # Advanced: If you plan to run with a different user besides root or filebrowser, you will need to mount a tmp directory.
+      #- './tmp/:/home/filebrowser/tmp/'
+    # ports:
+    #   - '80:80'
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.filebrowser.entrypoints=http"
+        - "traefik.http.routers.filebrowser.rule=Host(`filebrowser.${DOMAIN}`)" #Dom4in
+        - "traefik.http.middlewares.filebrowser-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.filebrowser.middlewares=filebrowser-https-redirect"
+        - "traefik.http.routers.filebrowser-secure.entrypoints=https"
+        - "traefik.http.routers.filebrowser-secure.rule=Host(`filebrowser.${DOMAIN}`)" #Dom4in
+        - "traefik.http.routers.filebrowser-secure.tls=true"
+        - "traefik.http.routers.filebrowser-secure.service=filebrowser"
+        - "traefik.http.services.filebrowser.loadbalancer.server.port=80" #port
+        - "traefik.swarm.network=proxy"
+        #HOMEPAGE
+        - homepage.group=Administration
+        - homepage.name=filebrowser
+        - homepage.icon=filebrowser.png
+        - homepage.href=https://filebrowser.${DOMAIN}
+
+networks:
+  proxy:
+    external: true

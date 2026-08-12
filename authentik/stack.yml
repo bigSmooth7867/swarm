@@ -1,0 +1,177 @@
+services:
+  server:
+    image: ghcr.io/goauthentik/server:2026.5.6
+    command: server
+    environment:
+      # Secrets via file:// prefix - authentik reads file contents
+      AUTHENTIK_POSTGRESQL__USER: "file:///run/secrets/authentik--pg_user"
+      AUTHENTIK_POSTGRESQL__PASSWORD: "file:///run/secrets/authentik--pg_pass"
+      AUTHENTIK_POSTGRESQL__NAME: "file:///run/secrets/authentik--pg_db"
+      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik--authentik_secret_key"
+      # PostgreSQL - via HAProxy VIP port 5000 (primary/read-write)
+      AUTHENTIK_POSTGRESQL__HOST: db.${DOMAIN}
+      AUTHENTIK_POSTGRESQL__PORT: "5000"
+      AUTHENTIK_POSTGRESQL__SSLMODE: require
+      AUTHENTIK_LOG_LEVEL: warning
+      AUTHENTIK_POSTGRESQL__CONN_MAX_AGE: "0"
+      AUTHENTIK_POSTGRESQL__CONN_HEALTH_CHECKS: "true"
+      AUTHENTIK_POSTGRESQL__DISABLE_SERVER_SIDE_CURSORS: "true"
+      # Silences POSTGRES_PASSWORD fallback warning - same secret, not used for actual auth
+      POSTGRES_PASSWORD: file:///run/secrets/authentik--pg_pass
+      # S3 media storage
+      AUTHENTIK_STORAGE__BACKEND: "s3"
+      AUTHENTIK_STORAGE__S3__ENDPOINT: "https://s3.${DOMAIN}"  
+      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"                          
+      AUTHENTIK_STORAGE__S3__BUCKET_NAME: "authentik-media"        
+      AUTHENTIK_STORAGE__S3__ACCESS_KEY: "file:///run/secrets/authentik--s3_access_key"
+      AUTHENTIK_STORAGE__S3__SECRET_KEY: "file:///run/secrets/authentik--s3_secret_key"
+      # Must be browser-reachable, include bucket name, and have NO scheme (https:// controlled by SECURE_URLS)
+      AUTHENTIK_STORAGE__S3__CUSTOM_DOMAIN: "s3.${DOMAIN}/authentik-media"  
+      AUTHENTIK_STORAGE__S3__ADDRESSING_STYLE: "path"
+    secrets:
+      - authentik--pg_user
+      - authentik--pg_pass
+      - authentik--pg_db
+      - authentik--authentik_secret_key
+      - authentik--s3_access_key
+      - authentik--s3_secret_key
+    volumes:
+      - /mnt/cephfs/app_data/authentik/data:/data
+      - /mnt/cephfs/app_data/authentik/custom-templates:/templates
+    networks:
+      - proxy
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: any
+        delay: 5s
+        window: 120s
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.auth.entrypoints=http"
+        - "traefik.http.routers.auth.rule=Host(`auth.${DOMAIN}`)"
+        - "traefik.http.middlewares.auth-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.auth.middlewares=auth-https-redirect"
+        - "traefik.http.routers.auth-secure.entrypoints=https"
+        - "traefik.http.routers.auth-secure.rule=Host(`auth.${DOMAIN}`)"
+        - "traefik.http.routers.auth-secure.tls=true"
+        - "traefik.http.routers.auth-secure.service=auth"
+        - "traefik.http.services.auth.loadbalancer.server.port=9000"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Administration"
+        - "homepage.name=authentik"
+        - "homepage.icon=authentik.png"
+        - "homepage.href=https://auth.${DOMAIN}"
+    healthcheck:
+      test: ["CMD", "ak", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  worker:
+    image: ghcr.io/goauthentik/server:2026.5.6
+    command: worker
+    environment:
+      AUTHENTIK_POSTGRESQL__USER: "file:///run/secrets/authentik--pg_user"
+      AUTHENTIK_POSTGRESQL__PASSWORD: "file:///run/secrets/authentik--pg_pass"
+      AUTHENTIK_POSTGRESQL__NAME: "file:///run/secrets/authentik--pg_db"
+      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik--authentik_secret_key"
+      AUTHENTIK_POSTGRESQL__HOST: db.${DOMAIN}
+      AUTHENTIK_POSTGRESQL__PORT: "5000"
+      AUTHENTIK_POSTGRESQL__SSLMODE: require
+      AUTHENTIK_LOG_LEVEL: warning
+      AUTHENTIK_POSTGRESQL__CONN_MAX_AGE: "0"
+      AUTHENTIK_POSTGRESQL__CONN_HEALTH_CHECKS: "true"
+      AUTHENTIK_POSTGRESQL__DISABLE_SERVER_SIDE_CURSORS: "true"
+      # Silences POSTGRES_PASSWORD fallback warning - same secret, not used for actual auth
+      POSTGRES_PASSWORD: file:///run/secrets/authentik--pg_pass
+      # S3 media storage
+      AUTHENTIK_STORAGE__BACKEND: "s3"
+      AUTHENTIK_STORAGE__S3__ENDPOINT: "https://s3.${DOMAIN}"  
+      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"                           
+      AUTHENTIK_STORAGE__S3__BUCKET_NAME: "authentik-media"                
+      AUTHENTIK_STORAGE__S3__ACCESS_KEY: "file:///run/secrets/authentik--s3_access_key"
+      AUTHENTIK_STORAGE__S3__SECRET_KEY: "file:///run/secrets/authentik--s3_secret_key"
+      # Must be browser-reachable, include bucket name, and have NO scheme (https:// controlled by SECURE_URLS)
+      AUTHENTIK_STORAGE__S3__CUSTOM_DOMAIN: "s3.${DOMAIN}/authentik-media"  
+      AUTHENTIK_STORAGE__S3__ADDRESSING_STYLE: "path"
+    secrets:
+      - authentik--pg_user
+      - authentik--pg_pass
+      - authentik--pg_db
+      - authentik--authentik_secret_key
+      - authentik--s3_access_key
+      - authentik--s3_secret_key
+    volumes:
+      - /mnt/cephfs/app_data/authentik/data:/data
+      - /mnt/cephfs/app_data/authentik/certs:/certs
+      - /mnt/cephfs/app_data/authentik/custom-templates:/templates
+    networks:
+      - proxy
+      - dockerproxynet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        window: 120s
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+      placement:
+        constraints:
+          - node.role == manager
+    healthcheck:
+      test: ["CMD", "ak", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+secrets:
+  authentik--pg_user:
+    external: true
+  authentik--pg_pass:
+    external: true
+  authentik--pg_db:
+    external: true
+  authentik--authentik_secret_key:
+    external: true
+  authentik--s3_access_key:
+    external: true
+  authentik--s3_secret_key:
+    external: true
+
+networks:
+  proxy:
+    external: true
+  dockerproxynet:
+    external: true

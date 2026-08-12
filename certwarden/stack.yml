@@ -1,0 +1,42 @@
+services:
+  certwarden:
+    image: ghcr.io/gregtwallace/certwarden:v0.29.7
+    volumes:
+      - /home/nexus/local/certwarden/data:/app/data
+    networks:
+      - proxy
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-01
+      restart_policy:
+        condition: any
+        delay: 5s
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.certwarden.entrypoints=http"
+        - "traefik.http.routers.certwarden.rule=Host(`certs.${DOMAIN}`)"
+        - "traefik.http.middlewares.certwarden-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.certwarden.middlewares=certwarden-https-redirect"
+        - "traefik.http.routers.certwarden-secure.entrypoints=https"
+        - "traefik.http.routers.certwarden-secure.rule=Host(`certs.${DOMAIN}`)"
+        - "traefik.http.routers.certwarden-secure.tls=true"
+        - "traefik.http.routers.certwarden-secure.service=certwarden"
+        - "traefik.http.services.certwarden.loadbalancer.server.port=4050"
+        - "traefik.swarm.network=proxy"
+        #HOMEPAGE
+        - "homepage.group=Administration"
+        - "homepage.name=cert-warden"
+        - "homepage.icon=cert-warden.png"
+        - "homepage.href=https://certs.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=certs.${DOMAIN}"
+
+networks:
+  proxy:
+    external: true
+
+    

@@ -1,0 +1,179 @@
+services:
+  romm:
+    image: rommapp/romm:5.1.0
+    environment:
+      # Database config
+      ROMM_DB_DRIVER: postgresql
+      DB_HOST: "db.${DOMAIN}"
+      DB_PORT: "5000"
+      DB_QUERY_JSON: '{"sslmode": "require"}'
+      DB_NAME_FILE: /run/secrets/romm--pg_db
+      DB_USER_FILE: /run/secrets/romm--pg_user
+      DB_PASSWD_FILE: /run/secrets/romm--pg_pass
+      # Redis (external)
+      REDIS_HOST: romm-redis
+      REDIS_PORT: "6379"
+      # IGDB
+      IGDB_CLIENT_ID_FILE: /run/secrets/romm--igdb_client_id
+      IGDB_CLIENT_SECRET_FILE: /run/secrets/romm--igdb_client_secret
+      # Mobygames
+      MOBYGAMES_API_KEY_FILE: /run/secrets/romm--mobygames_api_key
+      # ScreenScraper
+      SCREENSCRAPER_USER_FILE: /run/secrets/romm--screenscraper_user
+      SCREENSCRAPER_PASSWORD_FILE: /run/secrets/romm--screenscraper_password
+      # SteamGridDB
+      STEAMGRIDDB_API_KEY_FILE: /run/secrets/romm--steamgriddb_api_key
+      HASHEOUS_API_ENABLED: "true"
+      FLASHPOINT_API_ENABLED: "true"
+      HLTB_API_ENABLED: "true"
+      PLAYMATCH_API_ENABLED: "true"
+      LAUNCHBOX_API_ENABLED: "true"
+      # Authentication
+      ROMM_AUTH_SECRET_KEY_FILE: /run/secrets/romm--romm_auth_secret_key
+      # OIDC
+      OIDC_ENABLED: "true"
+      OIDC_PROVIDER: authentik
+      OIDC_REDIRECT_URI: https://romm.${DOMAIN}/api/oauth/openid
+      OIDC_SERVER_APPLICATION_URL: https://auth.${DOMAIN}/application/o/romm
+      OIDC_CLIENT_ID_FILE: /run/secrets/romm--oidc_client_id
+      OIDC_CLIENT_SECRET_FILE: /run/secrets/romm--oidc_client_secret
+      #LOG LEVEL
+      LOGLEVEL: WARNING
+    volumes:
+      - romm-resources:/romm/resources
+      - romm-assets:/romm/assets
+      - romm-library:/romm/library
+      - /mnt/cephfs/app_data/romm/config:/romm/config
+    secrets:
+      - romm--pg_db
+      - romm--pg_user
+      - romm--pg_pass
+      - romm--igdb_client_id
+      - romm--igdb_client_secret
+      - romm--mobygames_api_key
+      - romm--screenscraper_user
+      - romm--screenscraper_password
+      - romm--steamgriddb_api_key
+      - romm--romm_auth_secret_key
+      - romm--oidc_client_id
+      - romm--oidc_client_secret
+    networks:
+      - proxy
+      - internal
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.romm.entrypoints=http"
+        - "traefik.http.routers.romm.rule=Host(`romm.${DOMAIN}`)"
+        - "traefik.http.middlewares.romm-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.romm.middlewares=romm-https-redirect"
+        - "traefik.http.routers.romm-secure.entrypoints=https"
+        - "traefik.http.routers.romm-secure.rule=Host(`romm.${DOMAIN}`)"
+        - "traefik.http.routers.romm-secure.tls=true"
+        - "traefik.http.routers.romm-secure.service=romm"
+        - "traefik.http.services.romm.loadbalancer.server.port=8080"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Media"
+        - "homepage.name=romm"
+        - "homepage.icon=romm.png"
+        - "homepage.href=https://romm.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=romm.${DOMAIN}"
+
+  romm-redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  # NOTE: swarm NFS volume definitions are immutable. If you change the
+  # options below, run `docker volume rm roms_romm-resources` (and the
+  # other two) on every node that created them, then redeploy.
+  romm-resources:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/tank/roms/romm/romm_resources"
+  romm-assets:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/tank/roms/romm/romm_assets"
+  romm-library:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/tank/roms/library"
+
+secrets:
+  romm--pg_db:
+    external: true
+  romm--pg_user:
+    external: true
+  romm--pg_pass:
+    external: true
+  romm--igdb_client_id:
+    external: true
+  romm--igdb_client_secret:
+    external: true
+  romm--mobygames_api_key:
+    external: true
+  romm--screenscraper_user:
+    external: true
+  romm--screenscraper_password:
+    external: true
+  romm--steamgriddb_api_key:
+    external: true
+  romm--romm_auth_secret_key:
+    external: true
+  romm--oidc_client_id:
+    external: true
+  romm--oidc_client_secret:
+    external: true
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: overlay

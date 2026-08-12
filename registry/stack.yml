@@ -1,0 +1,36 @@
+services:
+  registry:
+    image: registry:3.1.1
+    user: "1000:1000"
+    ports:
+      - 5000:5000
+    volumes:
+      - /mnt/cephfs/app_data/registry-cache/registry-config.yml:/etc/distribution/config.yml:ro
+    secrets:
+      - docker-registry--access_key
+      - docker-registry--secret_key
+      - docker-registry--http_secret
+    environment:
+      - REGISTRY_LOG_LEVEL=warn              # app log level (error|warn|info|debug); only affects leveled logs, not access log
+      - REGISTRY_LOG_ACCESSLOG_DISABLED=true # drop per-request HTTP access log lines (combined format); re-enable if you want a pull audit trail
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        export REGISTRY_STORAGE_S3_ACCESSKEY="$$(cat /run/secrets/docker-registry--access_key)"
+        export REGISTRY_STORAGE_S3_SECRETKEY="$$(cat /run/secrets/docker-registry--secret_key)"
+        export REGISTRY_HTTP_SECRET="$$(cat /run/secrets/docker-registry--http_secret)"
+        exec /entrypoint.sh /etc/distribution/config.yml
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+secrets:
+  docker-registry--access_key:
+    external: true
+  docker-registry--secret_key:
+    external: true
+  docker-registry--http_secret:
+    external: true

@@ -1,0 +1,43 @@
+services:
+  meshcentral:
+    image: ghcr.io/ylianst/meshcentral:1.2.4
+    environment:
+      - DYNAMIC_CONFIG=false
+    extra_hosts:
+      - "db.${DOMAIN}:${PG_IP}"
+    volumes:
+      - /mnt/cephfs/app_data/meshcentral/data:/opt/meshcentral/meshcentral-data
+      - /mnt/cephfs/app_data/meshcentral/files:/opt/meshcentral/meshcentral-files
+      - /mnt/cephfs/app_data/meshcentral/backups:/opt/meshcentral/meshcentral-backups
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        parallelism: 1
+        order: stop-first
+        failure_action: rollback
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.meshcentral.entrypoints=http"
+        - "traefik.http.routers.meshcentral.rule=Host(`meshcentral.${DOMAIN}`)"
+        - "traefik.http.middlewares.meshcentral-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.meshcentral.middlewares=meshcentral-https-redirect"
+        - "traefik.http.routers.meshcentral-secure.entrypoints=https"
+        - "traefik.http.routers.meshcentral-secure.rule=Host(`meshcentral.${DOMAIN}`)"
+        - "traefik.http.routers.meshcentral-secure.tls=true"
+        - "traefik.http.routers.meshcentral-secure.service=meshcentral"
+        - "traefik.http.services.meshcentral.loadbalancer.server.port=443"
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - "homepage.group=Administration"
+        - "homepage.name=meshcentral"
+        - "homepage.icon=meshcentral.png"
+        - "homepage.href=https://meshcentral.${DOMAIN}"
+networks:
+  proxy:
+    external: true

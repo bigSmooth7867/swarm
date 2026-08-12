@@ -1,0 +1,46 @@
+services:
+  app:
+    image: ghcr.io/hargata/lubelogger:v1.7.0
+    # environment:
+    #   EnableAuth: "true"
+    #   EnableRootUserOIDC: "true"
+    #   LC_ALL: "en_US.UTF-8"
+    #   LANG: "en_US.UTF-8"
+    #   POSTGRES_CONNECTION:
+    volumes:
+      - /mnt/cephfs/app_data/lubelogger/data:/App/data
+      - /mnt/cephfs/app_data/lubelogger/keys:/root/.aspnet/DataProtection-Keys
+    # ports:
+    #   - 8085:8080
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.cars.entrypoints=http"
+        - "traefik.http.routers.cars.rule=Host(`cars.${DOMAIN}`)"
+        - "traefik.http.middlewares.cars-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.cars.middlewares=cars-https-redirect"
+        - "traefik.http.routers.cars-secure.entrypoints=https"
+        - "traefik.http.routers.cars-secure.rule=Host(`cars.${DOMAIN}`)"
+        - "traefik.http.routers.cars-secure.tls=true"
+        - "traefik.http.routers.cars-secure.service=cars"
+        - "traefik.http.services.cars.loadbalancer.server.port=8080"
+        - "traefik.swarm.network=proxy"
+        - "homepage.group=Personal"
+        - "homepage.name=lubelogger"
+        - "homepage.icon=lubelogger.png"
+        - "homepage.href=https://cars.${DOMAIN}"
+
+networks:
+  proxy:
+    external: true

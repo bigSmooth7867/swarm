@@ -1,0 +1,32 @@
+services:
+  radicale:
+    image: tomsquest/docker-radicale:3.7.6.0
+    volumes:
+      - /mnt/cephfs/app_data/radicale/data:/data
+      - /mnt/cephfs/app_data/radicale/config:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dav.entrypoints=http"
+        - "traefik.http.routers.dav.rule=Host(`dav.${DOMAIN}`)"
+        - "traefik.http.middlewares.dav-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.dav.middlewares=dav-https-redirect"
+        - "traefik.http.routers.dav-secure.entrypoints=https"
+        - "traefik.http.routers.dav-secure.rule=Host(`dav.${DOMAIN}`)"
+        - "traefik.http.routers.dav-secure.tls=true"
+        - "traefik.http.routers.dav-secure.service=dav"
+        - "traefik.http.services.dav.loadbalancer.server.port=5232"
+        - "traefik.swarm.network=proxy"
+
+networks:
+  proxy:
+    external: true

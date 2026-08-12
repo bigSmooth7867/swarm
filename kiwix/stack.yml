@@ -1,0 +1,43 @@
+services:
+  kiwix:
+    image: ghcr.io/kiwix/kiwix-serve:3.8.2
+    volumes:
+      - zim_data:/data:ro
+    command: '*.zim'
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.kiwix.entrypoints=http"
+        - "traefik.http.routers.kiwix.rule=Host(`kiwix.${DOMAIN}`)"
+        - "traefik.http.middlewares.kiwix-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.kiwix.middlewares=kiwix-https-redirect"
+        - "traefik.http.routers.kiwix-secure.entrypoints=https"
+        - "traefik.http.routers.kiwix-secure.rule=Host(`kiwix.${DOMAIN}`)"
+        - "traefik.http.routers.kiwix-secure.tls=true"
+        - "traefik.http.routers.kiwix-secure.service=kiwix"
+        - "traefik.http.services.kiwix.loadbalancer.server.port=8080"
+        - "traefik.swarm.network=proxy"
+        #HOMEPAGE
+        - "homepage.group=Personal"
+        - "homepage.name=kiwix"
+        - "homepage.icon=kiwix.png"
+        - "homepage.href=https://kiwix.${DOMAIN}"
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  zim_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,ro,nfsvers=4,noatime,soft,timeo=100
+      device: ":/mnt/tank/kiwix/zim"

@@ -1,0 +1,47 @@
+services:
+  tileserver:
+    image: maptiler/tileserver-gl:v5.6.0
+    healthcheck:
+      test: ["CMD", "node", "/usr/src/app/src/healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # ports:
+    #   - "8080:8080"
+    volumes:
+      - /mnt/truenas/ssdp1/media/maptiler/data/:/data
+      - /mnt/cephfs/app_data/maptiler/config.json:/config.json:ro
+    # command: ["--silent", "--file", "osm-2020-02-10-v3.11_us_florida.mbtiles"]
+    command: ["-c", "/config.json", "--silent"]
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.maps.entrypoints=http"
+        - "traefik.http.routers.maps.rule=Host(`maps.${DOMAIN}`)"
+        - "traefik.http.middlewares.maps-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.maps.middlewares=maps-https-redirect"
+        - "traefik.http.routers.maps-secure.entrypoints=https"
+        - "traefik.http.routers.maps-secure.rule=Host(`maps.${DOMAIN}`)"
+        - "traefik.http.routers.maps-secure.tls=true"
+        - "traefik.http.routers.maps-secure.service=maps"
+        - "traefik.http.services.maps.loadbalancer.server.port=8080"
+        - "traefik.swarm.network=proxy"
+        #HOMEPAGE
+        - "homepage.group=Home Automation"
+        - "homepage.name=maps"
+        - "homepage.icon=maptiler.png"
+        - "homepage.href=https://maps.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=maps.${DOMAIN}"
+
+networks:
+  proxy:
+    external: true

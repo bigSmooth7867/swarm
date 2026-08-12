@@ -1,0 +1,186 @@
+services:
+  traefik:
+    image: traefik:v3.7.10
+    hostname: "traefik-{{.Node.Hostname}}"
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 81
+        published: 81
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+      - target: 444
+        published: 444
+        protocol: tcp
+        mode: host
+      - target: 465
+        published: 465
+        protocol: tcp
+        mode: host
+      - target: 8883
+        published: 8883
+        protocol: tcp
+        mode: host
+      # health-check endpoint for keepalived track_script (Traefik /ping)
+      - target: 8082
+        published: 8082
+        protocol: tcp
+        mode: host
+    secrets:
+      - traefik-crowdsec-swarm--cf-token
+      - traefik-crowdsec-swarm--traefik_dashboard_credentials
+      - traefik-crowdsec-swarm--crowdsec_lapi_key 
+    environment:
+      - CF_DNS_API_TOKEN_FILE=/run/secrets/traefik-crowdsec-swarm--cf-token
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/traefik.yml:/traefik.yml:ro
+      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/acme.json:/acme.json
+      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/config.yml:/config.yml:ro
+      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/logs:/var/log/traefik
+      - /mnt/cephfs/app_data/vaultls/data/ca/ca-tls.cert:/certs/vaultls-ca.cert:ro
+    networks:
+      - proxy
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.traefik.entrypoints=http"
+        - "traefik.http.routers.traefik.rule=Host(`traefik-dashboard.${DOMAIN}`)"
+        - "traefik.http.middlewares.traefik-auth.basicauth.usersfile=/run/secrets/traefik-crowdsec-swarm--traefik_dashboard_credentials"
+        - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+        - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+        - "traefik.http.routers.traefik-secure.entrypoints=https"
+        - "traefik.http.routers.traefik-secure.rule=Host(`traefik-dashboard.${DOMAIN}`)"
+        # - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+        - "traefik.http.routers.traefik-secure.tls=true"
+        - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+        - "traefik.http.routers.traefik-secure.tls.domains[0].main=${DOMAIN}"
+        - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.${DOMAIN}"
+        - "traefik.http.routers.traefik-secure.service=api@internal"
+        - "traefik.http.services.traefik.loadbalancer.server.port=80"
+        # - "traefik.http.routers.traefik-secure.middlewares=middlewares-authentik@file"
+        - "traefik.http.routers.traefik-secure.middlewares=middlewares-authentik@file,traefik-auth"
+
+        - "homepage.group=Administration"
+        - "homepage.name=traefik"
+        - "homepage.icon=traefik.png"
+        - "homepage.href=https://traefik-dashboard.${DOMAIN}"
+    # healthcheck:
+    #   # Native Traefik CLI healthcheck: reads the static config and checks the
+    #   # configured ping entrypoint -- confirmed "OK: http://:8082/ping", exit 0.
+    #   # The traefik binary is always in this image, so no wget/curl/shell or
+    #   # localhost-vs-IPv6 concerns. (wget fallback if ever needed:
+    #   # ["CMD","wget","-q","-O","/dev/null","http://127.0.0.1:8082/ping"])
+    #   test: ["CMD", "traefik", "healthcheck"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 3
+    #   start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  crowdsec:
+    image: crowdsecurity/crowdsec:v1.7.8
+    hostname: "crowdsec-{{.Node.Hostname}}"
+    environment:
+      GID: "${GID:-1000}"
+      COLLECTIONS: "crowdsecurity/linux crowdsecurity/traefik"
+      LEVEL_WARN: "true"
+    volumes:
+      # Mount entire config dir - CrowdSec needs to write credential files on init
+      - /mnt/cephfs/app_data/traefik-crowdsec/crowdsec/config:/etc/crowdsec
+      # Data directory for persistence
+      - /mnt/cephfs/app_data/traefik-crowdsec/crowdsec/data:/var/lib/crowdsec/data
+      # Traefik logs to parse
+      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/logs:/var/log/traefik/:ro
+      # Old config - don't mount entire /etc/crowdsec, it overwrites credential files
+      # - /mnt/cephfs/app_data/traefik-crowdsec/crowdsec/config:/etc/crowdsec
+    # ports:
+    #   - target: 6060
+    #     published: 6060
+    #     protocol: tcp
+    #     mode: host
+    #   - target: 8080
+    #     published: 8080
+    #     protocol: tcp
+    #     mode: host
+    networks:
+      - proxy
+    deploy:
+      mode: replicated
+      replicas: 1  # Single instance - Swarm handles failover
+      placement:
+        constraints:
+          - node.role == manager
+        preferences:
+          - spread: node.id  # Prefer spreading if we ever scale up
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: stop-first
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "cscli", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+secrets:
+  traefik-crowdsec-swarm--cf-token:
+    external: true
+  traefik-crowdsec-swarm--traefik_dashboard_credentials:
+    external: true
+  traefik-crowdsec-swarm--crowdsec_lapi_key:
+    external: true
+
+networks:
+  proxy:
+    external: true

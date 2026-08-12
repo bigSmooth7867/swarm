@@ -1,0 +1,176 @@
+services:
+  grampsweb:
+    image: ghcr.io/gramps-project/grampsweb:26.6.2
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        export GRAMPSWEB_SECRET_KEY=$$(cat /run/secrets/gramps--grampsweb_secret_key)
+        export GRAMPSWEB_OIDC_CLIENT_SECRET=$$(cat /run/secrets/gramps--grampsweb_oidc_client_secret)
+        export GRAMPSWEB_POSTGRES_PASSWORD=$$(cat /run/secrets/gramps--pg_pass)
+        export GRAMPSWEB_USER_DB_URI=$$(cat /run/secrets/gramps--grampsweb_user_db_uri)
+        export GRAMPSWEB_SEARCH_INDEX_DB_URI=$$(cat /run/secrets/gramps--grampsweb_search_index_db_uri)
+        REDIS_PASS=$$(cat /run/secrets/gramps--grampsweb_redis_password)
+        export GRAMPSWEB_CELERY_CONFIG__broker_url="redis://gramps_user:$${REDIS_PASS}@redis:6379/15"
+        export GRAMPSWEB_CELERY_CONFIG__result_backend="redis://gramps_user:$${REDIS_PASS}@redis:6379/16"
+        export GRAMPSWEB_RATELIMIT_STORAGE_URI="redis://gramps_user:$${REDIS_PASS}@redis:6379/17"
+        exec /docker-entrypoint.sh gunicorn -w $${GUNICORN_NUM_WORKERS:-8} -b 0.0.0.0:5000 gramps_webapi.wsgi:app --timeout $${GUNICORN_TIMEOUT:-120} --limit-request-line 8190 --log-level warning
+    secrets:
+      - gramps--grampsweb_secret_key
+      - gramps--grampsweb_oidc_client_secret
+      - gramps--pg_pass
+      - gramps--grampsweb_user_db_uri
+      - gramps--grampsweb_search_index_db_uri
+      - gramps--grampsweb_redis_password
+    volumes:
+      - /mnt/cephfs/app_data/gramps/gramps_thumb_cache:/app/thumbnail_cache
+      - /mnt/cephfs/app_data/gramps/gramps_cache:/app/cache
+      - /mnt/cephfs/app_data/gramps/gramps_media:/app/media
+      - /mnt/cephfs/app_data/gramps/gramps_tmp:/tmp
+      - /mnt/cephfs/app_data/gramps/gramps_config/config.js:/app/static/config.js
+      - /mnt/cephfs/app_data/gramps/gramps_db:/root/.gramps/grampsdb
+      - /mnt/cephfs/app_data/gramps/gramps_db:/root/gramps/grampsdb
+    environment:
+      GRAMPSWEB_TREE: my_family_tree
+      GRAMPSWEB_POSTGRES_USER: gramps_user
+      GRAMPSWEB_POSTGRES_HOST: db.${DOMAIN}
+      GRAMPSWEB_POSTGRES_PORT: "5000"
+      PGSSLMODE: require
+      GRAMPSWEB_BASE_URL: https://genea.${DOMAIN}
+      GUNICORN_NUM_WORKERS: "2"
+      GRAMPSWEB_REGISTRATION_DISABLED: "true"
+      GRAMPSWEB_DISABLE_TELEMETRY: "true"
+      GRAMPSWEB_OIDC_ENABLED: "true"
+      GRAMPSWEB_OIDC_CLIENT_ID: Iim1xDgBoilpU1RnopGSzW4FaPa1LNLSoplgp4pE
+      GRAMPSWEB_OIDC_ISSUER: https://auth.${DOMAIN}/application/o/gramps/
+      GRAMPSWEB_OIDC_NAME: Authentik
+      GRAMPSWEB_OIDC_SCOPES: openid email profile
+      GRAMPSWEB_OIDC_AUTO_REDIRECT: "false"
+      GRAMPSWEB_OIDC_DISABLE_LOCAL_AUTH: "false"
+      GRAMPSWEB_OIDC_ROLE_CLAIM: groups
+      GRAMPSWEB_OIDC_GROUP_ADMIN: gramps-admins
+      GRAMPSWEB_OIDC_GROUP_EDITOR: gramps-editors
+      GRAMPSWEB_OIDC_GROUP_MEMBER: gramps-members
+      GRAMPSWEB_OIDC_GROUP_OWNER: gramps-owners
+    networks:
+      - redisnet
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.genea.entrypoints=http"
+        - "traefik.http.routers.genea.rule=Host(`genea.${DOMAIN}`)"
+        - "traefik.http.middlewares.genea-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.genea.middlewares=genea-https-redirect"
+        - "traefik.http.routers.genea-secure.entrypoints=https"
+        - "traefik.http.routers.genea-secure.rule=Host(`genea.${DOMAIN}`)"
+        - "traefik.http.routers.genea-secure.tls=true"
+        - "traefik.http.routers.genea-secure.service=genea"
+        - "traefik.http.services.genea.loadbalancer.server.port=5000"
+        - "traefik.swarm.network=proxy"
+        - homepage.group=Personal
+        - homepage.name=gramps-web
+        - homepage.icon=gramps-web.png
+        - homepage.href=https://genea.${DOMAIN}
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  grampsweb_celery:
+    image: ghcr.io/gramps-project/grampsweb:26.6.2
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        export GRAMPSWEB_SECRET_KEY=$$(cat /run/secrets/gramps--grampsweb_secret_key)
+        export GRAMPSWEB_OIDC_CLIENT_SECRET=$$(cat /run/secrets/gramps--grampsweb_oidc_client_secret)
+        export GRAMPSWEB_POSTGRES_PASSWORD=$$(cat /run/secrets/gramps--pg_pass)
+        export GRAMPSWEB_USER_DB_URI=$$(cat /run/secrets/gramps--grampsweb_user_db_uri)
+        export GRAMPSWEB_SEARCH_INDEX_DB_URI=$$(cat /run/secrets/gramps--grampsweb_search_index_db_uri)
+        REDIS_PASS=$$(cat /run/secrets/gramps--grampsweb_redis_password)
+        export GRAMPSWEB_CELERY_CONFIG__broker_url="redis://gramps_user:$${REDIS_PASS}@redis:6379/15"
+        export GRAMPSWEB_CELERY_CONFIG__result_backend="redis://gramps_user:$${REDIS_PASS}@redis:6379/16"
+        export GRAMPSWEB_RATELIMIT_STORAGE_URI="redis://gramps_user:$${REDIS_PASS}@redis:6379/17"
+        exec /docker-entrypoint.sh celery -A gramps_webapi.celery worker --loglevel=WARNING --concurrency=2
+    secrets:
+      - gramps--grampsweb_secret_key
+      - gramps--grampsweb_oidc_client_secret
+      - gramps--pg_pass
+      - gramps--grampsweb_user_db_uri
+      - gramps--grampsweb_search_index_db_uri
+      - gramps--grampsweb_redis_password
+    volumes:
+      - /mnt/cephfs/app_data/gramps/gramps_thumb_cache:/app/thumbnail_cache
+      - /mnt/cephfs/app_data/gramps/gramps_cache:/app/cache
+      - /mnt/cephfs/app_data/gramps/gramps_media:/app/media
+      - /mnt/cephfs/app_data/gramps/gramps_tmp:/tmp
+      - /mnt/cephfs/app_data/gramps/gramps_db:/root/.gramps/grampsdb
+      - /mnt/cephfs/app_data/gramps/gramps_db:/root/gramps/grampsdb
+    environment:
+      GRAMPSWEB_TREE: my_family_tree
+      GRAMPSWEB_POSTGRES_USER: gramps_user
+      GRAMPSWEB_POSTGRES_HOST: db.${DOMAIN}
+      GRAMPSWEB_POSTGRES_PORT: "5000"
+      PGSSLMODE: require
+      GRAMPSWEB_BASE_URL: https://genea.${DOMAIN}
+      GUNICORN_NUM_WORKERS: "2"
+      GRAMPSWEB_REGISTRATION_DISABLED: "true"
+      GRAMPSWEB_DISABLE_TELEMETRY: "true"
+      GRAMPSWEB_OIDC_ENABLED: "true"
+      GRAMPSWEB_OIDC_CLIENT_ID: Iim1xDgBoilpU1RnopGSzW4FaPa1LNLSoplgp4pE
+      GRAMPSWEB_OIDC_ISSUER: https://auth.${DOMAIN}/application/o/gramps/
+      GRAMPSWEB_OIDC_NAME: Authentik
+      GRAMPSWEB_OIDC_SCOPES: openid email profile
+      GRAMPSWEB_OIDC_AUTO_REDIRECT: "false"
+      GRAMPSWEB_OIDC_DISABLE_LOCAL_AUTH: "false"
+      GRAMPSWEB_OIDC_ROLE_CLAIM: groups
+      GRAMPSWEB_OIDC_GROUP_ADMIN: gramps-admins
+      GRAMPSWEB_OIDC_GROUP_EDITOR: gramps-editors
+      GRAMPSWEB_OIDC_GROUP_MEMBER: gramps-members
+      GRAMPSWEB_OIDC_GROUP_OWNER: gramps-owners
+    networks:
+      - redisnet
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+secrets:
+  gramps--grampsweb_secret_key:
+    external: true
+  gramps--grampsweb_oidc_client_secret:
+    external: true
+  gramps--pg_pass:
+    external: true
+  gramps--grampsweb_user_db_uri:
+    external: true
+  gramps--grampsweb_search_index_db_uri:
+    external: true
+  gramps--grampsweb_redis_password:
+    external: true
+
+networks:
+  redisnet:
+    external: true
+  proxy:
+    external: true

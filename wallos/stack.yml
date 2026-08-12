@@ -1,0 +1,105 @@
+services:
+  wallos:
+    image: bellamy/wallos:5.4.2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health.php"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+    secrets:
+      - wallos--oidc_client_secret
+    environment:
+      TZ: ${TZ}
+      # Optional OIDC environment variables
+      OIDC_ENABLED: "true"
+      OIDC_PROVIDER_NAME: "Authentik"
+      OIDC_CLIENT_ID: "MlsuUxeepv906DuKB7IuCImIfsh54j3xLqdZBDVm"
+      OIDC_CLIENT_SECRET_FILE: "/run/secrets/wallos--oidc_client_secret"
+      OIDC_ISSUER: "https://auth.${DOMAIN}/application/o/wallos/"
+      OIDC_AUTH_URL: "https://auth.${DOMAIN}/application/o/authorize/"
+      OIDC_TOKEN_URL: "https://auth.${DOMAIN}/application/o/token/"
+      OIDC_USERINFO_URL: "https://auth.${DOMAIN}/application/o/userinfo/"
+      OIDC_REDIRECT_URL: "https://wallos.${DOMAIN}/index.php" 
+      OIDC_LOGOUT_URL: "https://auth.${DOMAIN}/application/o/wallos/end-session/"
+      OIDC_USER_IDENTIFIER: "sub"
+      OIDC_SCOPES: "openid email profile"
+      OIDC_AUTO_CREATE_USER: "true"
+      OIDC_DISABLE_PASSWORD_LOGIN: "true"
+      OIDC_REQUIRE_EMAIL_VERIFIED: "true"
+      # Optional SSRF allowlist (overrides the Security Settings allowlist in the Admin UI)
+      SSRF_ALLOWLIST: "auth.${DOMAIN}"
+    volumes:
+      - '/home/nexus/local/wallos/db:/var/www/html/db'
+      - '/home/nexus/local/wallos/logos:/var/www/html/images/uploads/logos'
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      restart_policy:
+        condition: any
+      labels:
+        #TRAEFIK
+        # - "traefik.enable=true"
+        # - "traefik.http.routers.wallos.entrypoints=http"
+        # - "traefik.http.routers.wallos.rule=Host(`wallos.${DOMAIN}`)"
+        # - "traefik.http.middlewares.wallos-https-redirect.redirectscheme.scheme=https"
+        # - "traefik.http.routers.wallos.middlewares=wallos-https-redirect"
+        # - "traefik.http.routers.wallos-secure.entrypoints=https"
+        # - "traefik.http.routers.wallos-secure.rule=Host(`wallos.${DOMAIN}`)"
+        # - "traefik.http.routers.wallos-secure.tls=true"
+        # - "traefik.http.routers.wallos-secure.service=wallos"
+        # - "traefik.http.services.wallos.loadbalancer.server.port=80"
+        # - "traefik.swarm.network=proxy"
+
+        #TRAEFIK    
+        - "traefik.enable=true"
+        ## Internal HTTP router
+        - "traefik.http.routers.wallos-internal.entrypoints=http"
+        - "traefik.http.routers.wallos-internal.rule=Host(`wallos.${DOMAIN}`)"
+        - "traefik.http.routers.wallos-internal.middlewares=wallos-https-redirect"
+        ## External HTTP router
+        - "traefik.http.routers.wallos-external.entrypoints=http-external"
+        - "traefik.http.routers.wallos-external.rule=Host(`wallos.${DOMAIN}`)"
+        - "traefik.http.routers.wallos-external.middlewares=wallos-https-redirect"
+        ## Internal HTTPS router
+        - "traefik.http.routers.wallos-secure-internal.entrypoints=https"
+        - "traefik.http.routers.wallos-secure-internal.rule=Host(`wallos.${DOMAIN}`)"
+        - "traefik.http.routers.wallos-secure-internal.tls=true"
+        - "traefik.http.routers.wallos-secure-internal.service=wallos"
+        ## External HTTPS router
+        - "traefik.http.routers.wallos-secure-external.entrypoints=https-external"
+        - "traefik.http.routers.wallos-secure-external.rule=Host(`wallos.${DOMAIN}`)" 
+        - "traefik.http.routers.wallos-secure-external.tls=true"
+        - "traefik.http.routers.wallos-secure-external.service=wallos"
+        ## Service Configuration
+        - "traefik.http.services.wallos.loadbalancer.server.port=80"
+        ## Middleware for HTTPS redirection
+        - "traefik.http.middlewares.wallos-https-redirect.redirectscheme.scheme=https"  
+        ## mTLS - EXTERNAL (uncomment ONE)
+        - "traefik.http.routers.wallos-secure-external.tls.options=mtls@file"
+        # Network 
+        - "traefik.swarm.network=proxy"
+        #HOMEPAGE
+        - homepage.group=Personal
+        - homepage.name=wallos
+        - homepage.icon=wallos.png
+        - homepage.href=https://wallos.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=wallos.${DOMAIN}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+
+secrets:
+  wallos--oidc_client_secret:
+    external: true
+
+networks:
+  proxy:
+    external: true

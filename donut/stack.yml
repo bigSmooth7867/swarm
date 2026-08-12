@@ -1,0 +1,61 @@
+services:
+  donut-sync:
+    image: donutbrowser/donut-sync:v0.29.3  # consider pinning a tag/digest in prod
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        export SYNC_TOKEN="$$(cat /run/secrets/donut--sync_token)"
+        export S3_ACCESS_KEY_ID="$$(cat /run/secrets/donut--s3_access_key_id)"
+        export S3_SECRET_ACCESS_KEY="$$(cat /run/secrets/donut--s3_secret_access_key)"
+        exec node dist/main
+    environment:
+      - PORT=3929
+      - S3_ENDPOINT=https://s3.${DOMAIN}
+      - S3_REGION=us-east-1
+      - S3_BUCKET=donut-sync
+      - S3_FORCE_PATH_STYLE=true
+      - AWS_REQUEST_CHECKSUM_CALCULATION=WHEN_REQUIRED
+      - AWS_RESPONSE_CHECKSUM_VALIDATION=WHEN_REQUIRED
+    secrets:
+      - donut--sync_token
+      - donut--s3_access_key_id
+      - donut--s3_secret_access_key
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:3929/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      replicas: 1            # stateless (all state in S3) — safe to scale up if you want
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        order: start-first
+        failure_action: rollback
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.donut.entrypoints=http"
+        - "traefik.http.routers.donut.rule=Host(`donut.${DOMAIN}`)"
+        - "traefik.http.middlewares.donut-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.donut.middlewares=donut-https-redirect"
+        - "traefik.http.routers.donut-secure.entrypoints=https"
+        - "traefik.http.routers.donut-secure.rule=Host(`donut.${DOMAIN}`)"
+        - "traefik.http.routers.donut-secure.tls=true"
+        - "traefik.http.routers.donut-secure.service=donut"
+        - "traefik.http.services.donut.loadbalancer.server.port=3929"
+        - "traefik.swarm.network=proxy"
+networks:
+  proxy:
+    external: true
+
+secrets:
+  donut--sync_token:
+    external: true
+  donut--s3_access_key_id:
+    external: true
+  donut--s3_secret_access_key:
+    external: true
