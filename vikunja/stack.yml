@@ -1,3 +1,14 @@
+
+      #VIKUNJA_SERVICE_CUSTOMLOGOURL
+      #team search issue
+      #enable Redis
+      #VIKUNJA_BACKGROUNDS_PROVIDERS 
+      #VIKUNJA_KEYVALUE_TYPE
+      #VIKUNJA_PLUGINS_ENABLED
+      #VIKUNJA_LICENSE_KEY
+      #unsplash
+      #sentry
+
 services:
   vikunja:
     image: vikunja/vikunja:2.5.0
@@ -5,7 +16,7 @@ services:
       - proxy
     secrets:
       - vikunja--pg_pass
-      - vikunja--jwt_secret
+      - vikunja--service_secret
       - vikunja--s3_access_key
       - vikunja--s3_secret_key
       - vikunja--oidc_client_id
@@ -13,7 +24,7 @@ services:
     environment:
       # --- service -----------------------------------------------------------
       VIKUNJA_SERVICE_PUBLICURL: "https://todo.${DOMAIN}"   # must match the Traefik host + Authentik redirect URI
-      VIKUNJA_SERVICE_SECRET_FILE: /run/secrets/vikunja--jwt_secret
+      VIKUNJA_SERVICE_SECRET_FILE: /run/secrets/vikunja--service_secret
       VIKUNJA_SERVICE_TIMEZONE: "${TZ}"     # tz database name; UTC offsets do NOT work
       VIKUNJA_SERVICE_ENABLECALDAV: "true"             # keep on for Apple Reminders / DAVx5
 
@@ -75,12 +86,14 @@ services:
       # VIKUNJA_SERVICE_ENABLELINKSHARING: "false"   # share links have had repeated CVEs; disable if unused
 
       # --- logging -----------------------------------------------------------
+      VIKUNJA_LOG_ENABLED: "true"
       VIKUNJA_LOG_STANDARD: stdout
       VIKUNJA_LOG_LEVEL: WARNING           # set DEBUG for first boot to see OIDC/S3/ParadeDB detection
       VIKUNJA_LOG_FORMAT: structured    # JSON, plays nicer with log shipping
-
+      VIKUNJA_LOG_EVENTSLEVEL: ERROR
 
       VIKUNJA_DEFAULTSETTINGS_LANGUAGE: "en-US"
+
     deploy:
       replicas: 1                        # add Redis + VIKUNJA_KEYVALUE_TYPE=redis before scaling
       restart_policy:
@@ -122,7 +135,7 @@ networks:
 secrets:
   vikunja--pg_pass:
     external: true
-  vikunja--jwt_secret:
+  vikunja--service_secret:
     external: true
   vikunja--s3_access_key:
     external: true
