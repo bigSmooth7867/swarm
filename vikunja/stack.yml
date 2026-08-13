@@ -90,8 +90,9 @@ services:
       VIKUNJA_LOG_STANDARD: stdout
       VIKUNJA_LOG_LEVEL: WARNING           # set DEBUG for first boot to see OIDC/S3/ParadeDB detection
       VIKUNJA_LOG_FORMAT: structured    # JSON, plays nicer with log shipping
-      VIKUNJA_LOG_EVENTSLEVEL: ERROR
-
+      VIKUNJA_LOG_DATABASELEVEL: WARNING
+      VIKUNJA_LOG_EVENTSLEVEL: ERROR 
+      VIKUNJA_LOG_MAILLEVEL: WARNING
       VIKUNJA_DEFAULTSETTINGS_LANGUAGE: "en-US"
 
     deploy:
