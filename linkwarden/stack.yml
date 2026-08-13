@@ -91,7 +91,7 @@ services:
         max-file: "3"
 
   browser:
-    image: ghcr.io/browserless/chrome:v2.55.3
+    image: ghcr.io/browserless/chrome:v2.55.4
     init: true
     environment:
       - PORT=3001
