@@ -4,13 +4,13 @@ services:
     extra_hosts:
       - "db.${DOMAIN}:${PG_IP}"
     secrets:
-      - pgadmin--pgadmin_default_password
+      - pgadmin--default_password
     volumes:
       - /mnt/cephfs/app_data/pgadmin/data:/var/lib/pgadmin
       - /mnt/cephfs/app_data/pgadmin/config_local.py:/pgadmin4/config_local.py:ro
     environment:
       PGADMIN_DEFAULT_EMAIL: pgadmin@${DOMAIN}
-      PGADMIN_DEFAULT_PASSWORD_FILE: /run/secrets/pgadmin--pgadmin_default_password
+      PGADMIN_DEFAULT_PASSWORD_FILE: /run/secrets/pgadmin--default_password
       GUNICORN_ACCESS_LOGFILE: /dev/null
       PGADMIN_DISABLE_POSTFIX: "true"
     networks:
@@ -46,7 +46,7 @@ services:
         max-size: "10m"
 
 secrets:
-  pgadmin--pgadmin_default_password:
+  pgadmin--default_password:
     external: true
 
 networks:
