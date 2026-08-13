@@ -7,7 +7,7 @@ services:
       - source: vikunja_config
         target: /etc/vikunja/config.yml
     secrets:
-      - vikunja--db_password
+      - vikunja--pg_pass
       - vikunja--jwt_secret
       - vikunja--s3_access_key
       - vikunja--s3_secret_key
@@ -30,7 +30,7 @@ services:
       VIKUNJA_DATABASE_HOST: "db.${DOMAIN}:5000"      # VIP -> HAProxy primary
       VIKUNJA_DATABASE_DATABASE: vikunja_db
       VIKUNJA_DATABASE_USER: vikunja_user
-      VIKUNJA_DATABASE_PASSWORD_FILE: /run/secrets/vikunja--db_password
+      VIKUNJA_DATABASE_PASSWORD_FILE: /run/secrets/vikunja--pg_pass
       VIKUNJA_DATABASE_SSLMODE: require
       VIKUNJA_DATABASE_SCHEMA: public
 
@@ -115,7 +115,7 @@ configs:
     file: ./config.yml
 
 secrets:
-  vikunja--db_password:
+  vikunja--pg_pass:
     external: true
   vikunja--jwt_secret:
     external: true
