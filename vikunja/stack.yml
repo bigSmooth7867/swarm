@@ -38,9 +38,9 @@ services:
       # --- redis / keyvalue ---------------------------------------------------
       # Both required: REDIS_ENABLED alone doesn't switch the keyvalue store.
       # Rate limiting stores its counters here too (ratelimit.store=keyvalue default).
-      VIKUNJA_REDIS_ENABLED: "true"
-      VIKUNJA_REDIS_HOST: "vikunja-redis:6379"
-      VIKUNJA_KEYVALUE_TYPE: redis
+      # VIKUNJA_REDIS_ENABLED: "true"
+      # VIKUNJA_REDIS_HOST: "vikunja-redis:6379"
+      # VIKUNJA_KEYVALUE_TYPE: redis
 
       # --- files / Garage S3 --------------------------------------------------
       VIKUNJA_FILES_TYPE: s3
@@ -118,37 +118,37 @@ services:
       # DNSWEAVER
         - "dnsweaver.hostname=todo.${DOMAIN}"
 
-  vikunja-redis:
-    image: redis:7.4-alpine
-    command:
-      - redis-server
-      - --maxmemory
-      - 512mb
-      - --maxmemory-policy
-      - allkeys-lru        # pure cache: evict LRU when full instead of erroring (noeviction)
-      - --save
-      - ""
-      - --appendonly
-      - "no"
-    networks:
-      - internal
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 640M
-        reservations:
-          memory: 64M
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+  # vikunja-redis:
+  #   image: redis:7.4-alpine
+  #   command:
+  #     - redis-server
+  #     - --maxmemory
+  #     - 512mb
+  #     - --maxmemory-policy
+  #     - allkeys-lru        # pure cache: evict LRU when full instead of erroring (noeviction)
+  #     - --save
+  #     - ""
+  #     - --appendonly
+  #     - "no"
+  #   networks:
+  #     - internal
+  #   deploy:
+  #     replicas: 1
+  #     resources:
+  #       limits:
+  #         memory: 640M
+  #       reservations:
+  #         memory: 64M
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 15s
+  #     timeout: 5s
+  #     retries: 3
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
 
 networks:
   proxy:
