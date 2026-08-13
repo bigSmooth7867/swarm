@@ -1,19 +1,9 @@
-
-      #VIKUNJA_SERVICE_CUSTOMLOGOURL
-      #team search issue
-      #enable Redis
-      #VIKUNJA_BACKGROUNDS_PROVIDERS 
-      #VIKUNJA_KEYVALUE_TYPE
-      #VIKUNJA_PLUGINS_ENABLED
-      #VIKUNJA_LICENSE_KEY
-      #unsplash
-      #sentry
-
 services:
   vikunja:
     image: vikunja/vikunja:2.5.0
     networks:
       - proxy
+      - internal
     secrets:
       - vikunja--pg_pass
       - vikunja--service_secret
@@ -22,21 +12,16 @@ services:
       - vikunja--oidc_client_id
       - vikunja--oidc_client_secret
     environment:
+      # --- defaultsettings -----------------------------------------------------------
+      VIKUNJA_DEFAULTSETTINGS_LANGUAGE: "en-US"
       # --- service -----------------------------------------------------------
       VIKUNJA_SERVICE_PUBLICURL: "https://todo.${DOMAIN}"   # must match the Traefik host + Authentik redirect URI
       VIKUNJA_SERVICE_SECRET_FILE: /run/secrets/vikunja--service_secret
-      VIKUNJA_SERVICE_TIMEZONE: "${TZ}"     # tz database name; UTC offsets do NOT work
-      VIKUNJA_SERVICE_ENABLECALDAV: "true"             # keep on for Apple Reminders / DAVx5
-
-      # FIRST BOOT: leave registration on until your OIDC login has created
-      # your account and teams show up. Then flip to "false" and redeploy.
+      VIKUNJA_SERVICE_TIMEZONE: "${TZ}"     
+      VIKUNJA_SERVICE_ENABLECALDAV: "true"           
       VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
-
-      # Behind Swarm ingress + a reverse proxy, so trust forwarded headers.
-      # Without this, rate limiting and logs see the proxy IP for everyone.
       VIKUNJA_SERVICE_IPEXTRACTIONMETHOD: "xff"
       VIKUNJA_SERVICE_TRUSTEDPROXIES: "10.0.0.0/8,172.16.0.0/12,192.168.50.0/24"
-
       # --- database ----------------------------------------------------------
       VIKUNJA_DATABASE_TYPE: postgres
       VIKUNJA_DATABASE_HOST: "db.${DOMAIN}:5000"      # VIP -> HAProxy primary
@@ -45,12 +30,10 @@ services:
       VIKUNJA_DATABASE_PASSWORD_FILE: /run/secrets/vikunja--pg_pass
       VIKUNJA_DATABASE_SSLMODE: require
       VIKUNJA_DATABASE_SCHEMA: public
-
       # Your PgBouncer default_pool_size is 100 - don't let one app eat it all.
       VIKUNJA_DATABASE_MAXOPENCONNECTIONS: "20"
       VIKUNJA_DATABASE_MAXIDLECONNECTIONS: "5"
       VIKUNJA_DATABASE_MAXCONNECTIONLIFETIME: "10000"
-
       # --- files / Garage S3 -------------------------------------------------
       VIKUNJA_FILES_TYPE: s3
       VIKUNJA_FILES_S3_ENDPOINT: "https://s3.${DOMAIN}"   # protocol required
@@ -61,14 +44,7 @@ services:
       VIKUNJA_FILES_S3_SECRETKEY_FILE: /run/secrets/vikunja--s3_secret_key
       VIKUNJA_FILES_MAXSIZE: "50MB"                          # human-readable string
       # VIKUNJA_FILES_S3_DISABLESIGNING: "true"   # only if you hit XAmzContentSHA256Mismatch
-
       # --- auth / Authentik OIDC --------------------------------------------
-      # No config.yml needed: Vikunja builds the provider map directly from
-      # these env vars (verified in v2.5.0 source, setConfigFromEnv).
-      # Provider key ('authentik') must not contain underscores.
-      #
-      # FIRST BOOT: leave local auth on so you can't be locked out if OIDC
-      # misbehaves. Flip to "false" once your Authentik login works.
       VIKUNJA_AUTH_LOCAL_ENABLED: "false"
       VIKUNJA_AUTH_OPENID_ENABLED: "true"
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_NAME: "authentik"
@@ -80,21 +56,21 @@ services:
       # Crash on startup if Authentik is unreachable, so Swarm restarts the task
       # instead of serving an instance nobody can log into.
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_REQUIREAVAILABILITY: "true"
-
       # --- hardening (optional, recommended once internet-facing) ------------
-      # VIKUNJA_RATELIMIT_ENABLED: "true"
+      VIKUNJA_RATELIMIT_ENABLED: "true"
       # VIKUNJA_SERVICE_ENABLELINKSHARING: "false"   # share links have had repeated CVEs; disable if unused
-
+      # --- Redis -----------------------------------------------------------
+      VIKUNJA_REDIS_ENABLED: "true"
+      VIKUNJA_REDIS_HOST: "vikunja-redis:6379"
+      VIKUNJA_KEYVALUE_TYPE: redis
       # --- logging -----------------------------------------------------------
       VIKUNJA_LOG_ENABLED: "true"
       VIKUNJA_LOG_STANDARD: stdout
-      VIKUNJA_LOG_LEVEL: WARNING           # set DEBUG for first boot to see OIDC/S3/ParadeDB detection
+      VIKUNJA_LOG_LEVEL: WARNING           
       VIKUNJA_LOG_FORMAT: structured    # JSON, plays nicer with log shipping
       VIKUNJA_LOG_DATABASELEVEL: WARNING
       VIKUNJA_LOG_EVENTSLEVEL: ERROR 
       VIKUNJA_LOG_MAILLEVEL: WARNING
-      VIKUNJA_DEFAULTSETTINGS_LANGUAGE: "en-US"
-
     deploy:
       replicas: 1                        # add Redis + VIKUNJA_KEYVALUE_TYPE=redis before scaling
       restart_policy:
@@ -129,9 +105,47 @@ services:
       # DNSWEAVER
         - "dnsweaver.hostname=todo.${DOMAIN}"
 
+  vikunja-redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
 networks:
   proxy:
     external: true
+  internal:
+    driver: overlay
 
 secrets:
   vikunja--pg_pass:
