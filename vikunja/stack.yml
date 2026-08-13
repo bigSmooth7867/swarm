@@ -1,0 +1,127 @@
+services:
+  vikunja:
+    image: vikunja/vikunja:2.5.0
+    networks:
+      - proxy
+    configs:
+      - source: vikunja_config
+        target: /etc/vikunja/config.yml
+    secrets:
+      - vikunja--db_password
+      - vikunja--jwt_secret
+      - vikunja--s3_access_key
+      - vikunja--s3_secret_key
+      - vikunja--oidc_client_secret
+    environment:
+      # --- service -----------------------------------------------------------
+      VIKUNJA_SERVICE_PUBLICURL: "https://tasks.${DOMAIN}"
+      VIKUNJA_SERVICE_SECRET_FILE: /run/secrets/vikunja--jwt_secret
+      VIKUNJA_SERVICE_TIMEZONE: "${TZ}"     # tz database name; UTC offsets do NOT work
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"      # OIDC only
+      VIKUNJA_SERVICE_ENABLECALDAV: "true"             # keep on for Apple Reminders / DAVx5
+
+      # Behind Swarm ingress + a reverse proxy, so trust forwarded headers.
+      # Without this, rate limiting and logs see the proxy IP for everyone.
+      VIKUNJA_SERVICE_IPEXTRACTIONMETHOD: "xff"
+      VIKUNJA_SERVICE_TRUSTEDPROXIES: "10.0.0.0/8,172.16.0.0/12,192.168.50.0/24"
+
+      # --- database ----------------------------------------------------------
+      VIKUNJA_DATABASE_TYPE: postgres
+      VIKUNJA_DATABASE_HOST: "db.${DOMAIN}:5000"      # VIP -> HAProxy primary
+      VIKUNJA_DATABASE_DATABASE: vikunja_db
+      VIKUNJA_DATABASE_USER: vikunja_user
+      VIKUNJA_DATABASE_PASSWORD_FILE: /run/secrets/vikunja--db_password
+      VIKUNJA_DATABASE_SSLMODE: require
+      VIKUNJA_DATABASE_SCHEMA: public
+
+      # Your PgBouncer default_pool_size is 100 - don't let one app eat it all.
+      VIKUNJA_DATABASE_MAXOPENCONNECTIONS: "20"
+      VIKUNJA_DATABASE_MAXIDLECONNECTIONS: "5"
+      VIKUNJA_DATABASE_MAXCONNECTIONLIFETIME: "10000"
+
+      # --- files / Garage S3 -------------------------------------------------
+      VIKUNJA_FILES_TYPE: s3
+      VIKUNJA_FILES_S3_ENDPOINT: "https://s3.${DOMAIN}"   # protocol required
+      VIKUNJA_FILES_S3_BUCKET: vikunja
+      VIKUNJA_FILES_S3_REGION: us-east-1                        # MUST match [s3_api].s3_region
+      VIKUNJA_FILES_S3_USEPATHSTYLE: "true"                  # Garage: path-style always works
+      VIKUNJA_FILES_S3_ACCESSKEY_FILE: /run/secrets/vikunja--s3_access_key
+      VIKUNJA_FILES_S3_SECRETKEY_FILE: /run/secrets/vikunja--s3_secret_key
+      VIKUNJA_FILES_MAXSIZE: "50MB"                          # human-readable string
+      # VIKUNJA_FILES_S3_DISABLESIGNING: "true"   # only if you hit XAmzContentSHA256Mismatch
+
+      # --- auth / Authentik OIDC --------------------------------------------
+      # NOTE: the provider key 'authentik' MUST exist in the mounted config.yml
+      #       or these env vars are ignored entirely.
+      VIKUNJA_AUTH_LOCAL_ENABLED: "false"
+      VIKUNJA_AUTH_OPENID_ENABLED: "true"
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_NAME: "authentik"
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_AUTHURL: "https://auth.${DOMAIN}/application/o/vikunja/"
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_LOGOUTURL: "https://auth.${DOMAIN}/application/o/vikunja/end-session/"
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_CLIENTID: "7JQHrHi8oetkRR2hkhfkplV9f07mkYTueG1eOLPZ"
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_CLIENTSECRET_FILE: /run/secrets/vikunja--oidc_client_secret
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_SCOPE: "openid email profile"
+      # Crash on startup if Authentik is unreachable, so Swarm restarts the task
+      # instead of serving an instance nobody can log into.
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_REQUIREAVAILABILITY: "true"
+
+      # --- logging -----------------------------------------------------------
+      VIKUNJA_LOG_STANDARD: stdout
+      VIKUNJA_LOG_LEVEL: INFO
+      VIKUNJA_LOG_FORMAT: structured    # JSON, plays nicer with log shipping
+
+    deploy:
+      replicas: 1                        # see note on keyvalue below before scaling
+      restart_policy:
+        condition: any
+        delay: 10s
+      update_config:
+        order: stop-first                # DB migrations run on start; avoid two versions at once
+        failure_action: rollback
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.vikunja.entrypoints=http"
+        - "traefik.http.routers.vikunja.rule=Host(`todo.${DOMAIN}`)" 
+        - "traefik.http.middlewares.vikunja-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.vikunja.middlewares=vikunja-https-redirect"
+        - "traefik.http.routers.vikunja-secure.entrypoints=https"
+        - "traefik.http.routers.vikunja-secure.rule=Host(`todo.${DOMAIN}`)" 
+        - "traefik.http.routers.vikunja-secure.tls=true"
+        - "traefik.http.routers.vikunja-secure.service=vikunja"
+        - "traefik.http.services.vikunja.loadbalancer.server.port=3456"
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - "homepage.group=Personal"
+        - "homepage.name=vikunja"
+        - "homepage.icon=vikunja.png"
+        - "homepage.href=https://todo.${DOMAIN}"
+      # DNSWEAVER
+        - "dnsweaver.hostname=todo.${DOMAIN}"
+
+networks:
+  proxy:
+    external: true
+
+configs:
+  vikunja_config:
+    # Bump the name (v2, v3...) on every change - Swarm configs are immutable.
+    name: vikunja_config_v1
+    file: ./config.yml
+
+secrets:
+  vikunja--db_password:
+    external: true
+  vikunja--jwt_secret:
+    external: true
+  vikunja--s3_access_key:
+    external: true
+  vikunja--s3_secret_key:
+    external: true
+  vikunja--oidc_client_secret:
+    external: true
