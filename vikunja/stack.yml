@@ -12,39 +12,50 @@ services:
       - vikunja--oidc_client_id
       - vikunja--oidc_client_secret
     environment:
-      # --- defaultsettings -----------------------------------------------------------
-      VIKUNJA_DEFAULTSETTINGS_LANGUAGE: "en-US"
-      # --- service -----------------------------------------------------------
+      # --- service ------------------------------------------------------------
       VIKUNJA_SERVICE_PUBLICURL: "https://todo.${DOMAIN}"   # must match the Traefik host + Authentik redirect URI
       VIKUNJA_SERVICE_SECRET_FILE: /run/secrets/vikunja--service_secret
-      VIKUNJA_SERVICE_TIMEZONE: "${TZ}"     
-      VIKUNJA_SERVICE_ENABLECALDAV: "true"           
-      VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
+      VIKUNJA_SERVICE_TIMEZONE: "${TZ}"
+      VIKUNJA_SERVICE_ENABLECALDAV: "true"
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"   # local signup only; OIDC still creates accounts on first login
       VIKUNJA_SERVICE_IPEXTRACTIONMETHOD: "xff"
       VIKUNJA_SERVICE_TRUSTEDPROXIES: "10.0.0.0/8,172.16.0.0/12,192.168.50.0/24"
-      # --- database ----------------------------------------------------------
+      # VIKUNJA_SERVICE_ENABLELINKSHARING: "false"  # share links have had repeated CVEs; disable if unused
+
+      # --- database (external HA cluster: VIP -> HAProxy -> PgBouncer) --------
       VIKUNJA_DATABASE_TYPE: postgres
-      VIKUNJA_DATABASE_HOST: "db.${DOMAIN}:5000"      # VIP -> HAProxy primary
+      VIKUNJA_DATABASE_HOST: "db.${DOMAIN}:5000"
       VIKUNJA_DATABASE_DATABASE: vikunja_db
       VIKUNJA_DATABASE_USER: vikunja_user
       VIKUNJA_DATABASE_PASSWORD_FILE: /run/secrets/vikunja--pg_pass
       VIKUNJA_DATABASE_SSLMODE: require
       VIKUNJA_DATABASE_SCHEMA: public
-      # Your PgBouncer default_pool_size is 100 - don't let one app eat it all.
+      # PgBouncer default_pool_size is 100 - don't let one app eat it all.
       VIKUNJA_DATABASE_MAXOPENCONNECTIONS: "20"
       VIKUNJA_DATABASE_MAXIDLECONNECTIONS: "5"
       VIKUNJA_DATABASE_MAXCONNECTIONLIFETIME: "10000"
-      # --- files / Garage S3 -------------------------------------------------
+
+      # --- redis / keyvalue ---------------------------------------------------
+      # Both required: REDIS_ENABLED alone doesn't switch the keyvalue store.
+      # Rate limiting stores its counters here too (ratelimit.store=keyvalue default).
+      VIKUNJA_REDIS_ENABLED: "true"
+      VIKUNJA_REDIS_HOST: "vikunja-redis:6379"
+      VIKUNJA_KEYVALUE_TYPE: redis
+
+      # --- files / Garage S3 --------------------------------------------------
       VIKUNJA_FILES_TYPE: s3
-      VIKUNJA_FILES_S3_ENDPOINT: "https://s3.${DOMAIN}"   # protocol required
+      VIKUNJA_FILES_S3_ENDPOINT: "https://s3.${DOMAIN}"      # protocol required
       VIKUNJA_FILES_S3_BUCKET: vikunja
       VIKUNJA_FILES_S3_REGION: us-east-1                     # MUST match garage.toml [s3_api].s3_region
       VIKUNJA_FILES_S3_USEPATHSTYLE: "true"                  # Garage: path-style always works
       VIKUNJA_FILES_S3_ACCESSKEY_FILE: /run/secrets/vikunja--s3_access_key
       VIKUNJA_FILES_S3_SECRETKEY_FILE: /run/secrets/vikunja--s3_secret_key
-      VIKUNJA_FILES_MAXSIZE: "50MB"                          # human-readable string
+      VIKUNJA_FILES_MAXSIZE: "50MB"
       # VIKUNJA_FILES_S3_DISABLESIGNING: "true"   # only if you hit XAmzContentSHA256Mismatch
-      # --- auth / Authentik OIDC --------------------------------------------
+
+      # --- auth / Authentik OIDC ----------------------------------------------
+      # Access control lives in Authentik's application bindings.
+      # Provider key ('authentik') must not contain underscores (env parsing splits on _).
       VIKUNJA_AUTH_LOCAL_ENABLED: "false"
       VIKUNJA_AUTH_OPENID_ENABLED: "true"
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_NAME: "authentik"
@@ -56,23 +67,25 @@ services:
       # Crash on startup if Authentik is unreachable, so Swarm restarts the task
       # instead of serving an instance nobody can log into.
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_REQUIREAVAILABILITY: "true"
-      # --- hardening (optional, recommended once internet-facing) ------------
+
+      # --- ratelimit ----------------------------------------------------------
       VIKUNJA_RATELIMIT_ENABLED: "true"
-      # VIKUNJA_SERVICE_ENABLELINKSHARING: "false"   # share links have had repeated CVEs; disable if unused
-      # --- Redis -----------------------------------------------------------
-      VIKUNJA_REDIS_ENABLED: "true"
-      VIKUNJA_REDIS_HOST: "vikunja-redis:6379"
-      VIKUNJA_KEYVALUE_TYPE: redis
-      # --- logging -----------------------------------------------------------
-      VIKUNJA_LOG_ENABLED: "true"
+
+      # --- defaultsettings (applied to NEW users only) ------------------------
+      VIKUNJA_DEFAULTSETTINGS_LANGUAGE: "en-US"
+
+      # --- logging ------------------------------------------------------------
+      # INFO until ParadeDB detection + a clean S3 upload are confirmed in the
+      # logs, then drop LEVEL to WARNING.
       VIKUNJA_LOG_STANDARD: stdout
-      VIKUNJA_LOG_LEVEL: WARNING           
+      VIKUNJA_LOG_LEVEL: INFO
       VIKUNJA_LOG_FORMAT: structured    # JSON, plays nicer with log shipping
       VIKUNJA_LOG_DATABASELEVEL: WARNING
-      VIKUNJA_LOG_EVENTSLEVEL: ERROR 
+      VIKUNJA_LOG_EVENTSLEVEL: ERROR
       VIKUNJA_LOG_MAILLEVEL: WARNING
+
     deploy:
-      replicas: 1                        # add Redis + VIKUNJA_KEYVALUE_TYPE=redis before scaling
+      replicas: 1   # before scaling >1: set update_config parallelism: 1 (migrations must not run concurrently)
       restart_policy:
         condition: any
         delay: 10s
@@ -112,7 +125,7 @@ services:
       - --maxmemory
       - 512mb
       - --maxmemory-policy
-      - noeviction
+      - allkeys-lru        # pure cache: evict LRU when full instead of erroring (noeviction)
       - --save
       - ""
       - --appendonly
@@ -121,9 +134,6 @@ services:
       - internal
     deploy:
       replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
       resources:
         limits:
           memory: 640M
@@ -139,7 +149,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
 
 networks:
   proxy:
