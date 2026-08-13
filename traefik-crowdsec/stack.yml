@@ -81,31 +81,23 @@ services:
         - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
         - "traefik.http.routers.traefik-secure.entrypoints=https"
         - "traefik.http.routers.traefik-secure.rule=Host(`traefik-dashboard.${DOMAIN}`)"
-        # - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
         - "traefik.http.routers.traefik-secure.tls=true"
         - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
         - "traefik.http.routers.traefik-secure.tls.domains[0].main=${DOMAIN}"
         - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.${DOMAIN}"
         - "traefik.http.routers.traefik-secure.service=api@internal"
         - "traefik.http.services.traefik.loadbalancer.server.port=80"
-        # - "traefik.http.routers.traefik-secure.middlewares=middlewares-authentik@file"
-        - "traefik.http.routers.traefik-secure.middlewares=middlewares-authentik@file,traefik-auth"
-
+        - "traefik.http.routers.traefik-secure.middlewares=middlewares-authentik@file" #,traefik-auth"
         - "homepage.group=Administration"
         - "homepage.name=traefik"
         - "homepage.icon=traefik.png"
         - "homepage.href=https://traefik-dashboard.${DOMAIN}"
-    # healthcheck:
-    #   # Native Traefik CLI healthcheck: reads the static config and checks the
-    #   # configured ping entrypoint -- confirmed "OK: http://:8082/ping", exit 0.
-    #   # The traefik binary is always in this image, so no wget/curl/shell or
-    #   # localhost-vs-IPv6 concerns. (wget fallback if ever needed:
-    #   # ["CMD","wget","-q","-O","/dev/null","http://127.0.0.1:8082/ping"])
-    #   test: ["CMD", "traefik", "healthcheck"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 3
-    #   start_period: 30s
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     logging:
       driver: "json-file"
       options:
