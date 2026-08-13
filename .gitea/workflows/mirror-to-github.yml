@@ -1,14 +1,3 @@
-# .gitea/workflows/mirror-to-github.yml
-#
-# Mirrors ONLY the main branch to GitHub. Renovate branches never leave Gitea.
-#
-# Required repo secret (Settings → Actions → Secrets):
-#   GH_MIRROR_TOKEN  GitHub fine-grained PAT, Contents: read/write on the mirror repo
-#
-# Adjust:
-#   runs-on  → must match one of your act_runner labels
-#   GH_REPO  → your GitHub user/repo
-
 name: Mirror main to GitHub
 
 on:
