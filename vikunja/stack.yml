@@ -79,6 +79,8 @@ services:
       VIKUNJA_LOG_LEVEL: WARNING           # set DEBUG for first boot to see OIDC/S3/ParadeDB detection
       VIKUNJA_LOG_FORMAT: structured    # JSON, plays nicer with log shipping
 
+
+      VIKUNJA_DEFAULTSETTINGS_LANGUAGE: "en-US"
     deploy:
       replicas: 1                        # add Redis + VIKUNJA_KEYVALUE_TYPE=redis before scaling
       restart_policy:
