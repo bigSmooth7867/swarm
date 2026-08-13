@@ -58,7 +58,7 @@ services:
       #
       # FIRST BOOT: leave local auth on so you can't be locked out if OIDC
       # misbehaves. Flip to "false" once your Authentik login works.
-      VIKUNJA_AUTH_LOCAL_ENABLED: "true"
+      VIKUNJA_AUTH_LOCAL_ENABLED: "false"
       VIKUNJA_AUTH_OPENID_ENABLED: "true"
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_NAME: "authentik"
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_AUTHURL: "https://auth.${DOMAIN}/application/o/vikunja/"
@@ -76,7 +76,7 @@ services:
 
       # --- logging -----------------------------------------------------------
       VIKUNJA_LOG_STANDARD: stdout
-      VIKUNJA_LOG_LEVEL: INFO           # set DEBUG for first boot to see OIDC/S3/ParadeDB detection
+      VIKUNJA_LOG_LEVEL: WARNING           # set DEBUG for first boot to see OIDC/S3/ParadeDB detection
       VIKUNJA_LOG_FORMAT: structured    # JSON, plays nicer with log shipping
 
     deploy:
