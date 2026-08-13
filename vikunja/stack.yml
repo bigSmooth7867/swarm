@@ -3,22 +3,23 @@ services:
     image: vikunja/vikunja:2.5.0
     networks:
       - proxy
-    configs:
-      - source: vikunja_config
-        target: /etc/vikunja/config.yml
     secrets:
       - vikunja--pg_pass
       - vikunja--jwt_secret
       - vikunja--s3_access_key
       - vikunja--s3_secret_key
+      - vikunja--oidc_client_id
       - vikunja--oidc_client_secret
     environment:
       # --- service -----------------------------------------------------------
-      VIKUNJA_SERVICE_PUBLICURL: "https://tasks.${DOMAIN}"
+      VIKUNJA_SERVICE_PUBLICURL: "https://todo.${DOMAIN}"   # must match the Traefik host + Authentik redirect URI
       VIKUNJA_SERVICE_SECRET_FILE: /run/secrets/vikunja--jwt_secret
       VIKUNJA_SERVICE_TIMEZONE: "${TZ}"     # tz database name; UTC offsets do NOT work
-      VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"      # OIDC only
       VIKUNJA_SERVICE_ENABLECALDAV: "true"             # keep on for Apple Reminders / DAVx5
+
+      # FIRST BOOT: leave registration on until your OIDC login has created
+      # your account and teams show up. Then flip to "false" and redeploy.
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "true"
 
       # Behind Swarm ingress + a reverse proxy, so trust forwarded headers.
       # Without this, rate limiting and logs see the proxy IP for everyone.
@@ -43,7 +44,7 @@ services:
       VIKUNJA_FILES_TYPE: s3
       VIKUNJA_FILES_S3_ENDPOINT: "https://s3.${DOMAIN}"   # protocol required
       VIKUNJA_FILES_S3_BUCKET: vikunja
-      VIKUNJA_FILES_S3_REGION: us-east-1                        # MUST match [s3_api].s3_region
+      VIKUNJA_FILES_S3_REGION: us-east-1                     # MUST match garage.toml [s3_api].s3_region
       VIKUNJA_FILES_S3_USEPATHSTYLE: "true"                  # Garage: path-style always works
       VIKUNJA_FILES_S3_ACCESSKEY_FILE: /run/secrets/vikunja--s3_access_key
       VIKUNJA_FILES_S3_SECRETKEY_FILE: /run/secrets/vikunja--s3_secret_key
@@ -51,27 +52,35 @@ services:
       # VIKUNJA_FILES_S3_DISABLESIGNING: "true"   # only if you hit XAmzContentSHA256Mismatch
 
       # --- auth / Authentik OIDC --------------------------------------------
-      # NOTE: the provider key 'authentik' MUST exist in the mounted config.yml
-      #       or these env vars are ignored entirely.
-      VIKUNJA_AUTH_LOCAL_ENABLED: "false"
+      # No config.yml needed: Vikunja builds the provider map directly from
+      # these env vars (verified in v2.5.0 source, setConfigFromEnv).
+      # Provider key ('authentik') must not contain underscores.
+      #
+      # FIRST BOOT: leave local auth on so you can't be locked out if OIDC
+      # misbehaves. Flip to "false" once your Authentik login works.
+      VIKUNJA_AUTH_LOCAL_ENABLED: "true"
       VIKUNJA_AUTH_OPENID_ENABLED: "true"
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_NAME: "authentik"
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_AUTHURL: "https://auth.${DOMAIN}/application/o/vikunja/"
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_LOGOUTURL: "https://auth.${DOMAIN}/application/o/vikunja/end-session/"
-      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_CLIENTID: "7JQHrHi8oetkRR2hkhfkplV9f07mkYTueG1eOLPZ"
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_CLIENTID_FILE: /run/secrets/vikunja--oidc_client_id
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_CLIENTSECRET_FILE: /run/secrets/vikunja--oidc_client_secret
-      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_SCOPE: "openid email profile"
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_SCOPE: "openid email profile vikunja_scope"   # vikunja_scope = team sync mapping
       # Crash on startup if Authentik is unreachable, so Swarm restarts the task
       # instead of serving an instance nobody can log into.
       VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_REQUIREAVAILABILITY: "true"
 
+      # --- hardening (optional, recommended once internet-facing) ------------
+      # VIKUNJA_RATELIMIT_ENABLED: "true"
+      # VIKUNJA_SERVICE_ENABLELINKSHARING: "false"   # share links have had repeated CVEs; disable if unused
+
       # --- logging -----------------------------------------------------------
       VIKUNJA_LOG_STANDARD: stdout
-      VIKUNJA_LOG_LEVEL: INFO
+      VIKUNJA_LOG_LEVEL: INFO           # set DEBUG for first boot to see OIDC/S3/ParadeDB detection
       VIKUNJA_LOG_FORMAT: structured    # JSON, plays nicer with log shipping
 
     deploy:
-      replicas: 1                        # see note on keyvalue below before scaling
+      replicas: 1                        # add Redis + VIKUNJA_KEYVALUE_TYPE=redis before scaling
       restart_policy:
         condition: any
         delay: 10s
@@ -87,11 +96,11 @@ services:
         #TRAEFIK
         - "traefik.enable=true"
         - "traefik.http.routers.vikunja.entrypoints=http"
-        - "traefik.http.routers.vikunja.rule=Host(`todo.${DOMAIN}`)" 
+        - "traefik.http.routers.vikunja.rule=Host(`todo.${DOMAIN}`)"
         - "traefik.http.middlewares.vikunja-https-redirect.redirectscheme.scheme=https"
         - "traefik.http.routers.vikunja.middlewares=vikunja-https-redirect"
         - "traefik.http.routers.vikunja-secure.entrypoints=https"
-        - "traefik.http.routers.vikunja-secure.rule=Host(`todo.${DOMAIN}`)" 
+        - "traefik.http.routers.vikunja-secure.rule=Host(`todo.${DOMAIN}`)"
         - "traefik.http.routers.vikunja-secure.tls=true"
         - "traefik.http.routers.vikunja-secure.service=vikunja"
         - "traefik.http.services.vikunja.loadbalancer.server.port=3456"
@@ -108,12 +117,6 @@ networks:
   proxy:
     external: true
 
-configs:
-  vikunja_config:
-    # Bump the name (v2, v3...) on every change - Swarm configs are immutable.
-    name: vikunja_config_v1
-    file: ./config.yml
-
 secrets:
   vikunja--pg_pass:
     external: true
@@ -122,6 +125,8 @@ secrets:
   vikunja--s3_access_key:
     external: true
   vikunja--s3_secret_key:
+    external: true
+  vikunja--oidc_client_id:
     external: true
   vikunja--oidc_client_secret:
     external: true
