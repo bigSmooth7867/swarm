@@ -1,6 +1,6 @@
 services:
   dnsweaver:
-    image: ghcr.io/maxfield-allison/dnsweaver:v2.7.2
+    image: ghcr.io/maxfield-allison/dnsweaver:v2.7.3
     environment:
       - DNSWEAVER_SOURCES=dnsweaver
       - DNSWEAVER_DOCKER_HOST=tcp://dockerproxy:2375
