@@ -30,7 +30,7 @@ services:
 
       # FIRST BOOT: leave registration on until your OIDC login has created
       # your account and teams show up. Then flip to "false" and redeploy.
-      VIKUNJA_SERVICE_ENABLEREGISTRATION: "true"
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
 
       # Behind Swarm ingress + a reverse proxy, so trust forwarded headers.
       # Without this, rate limiting and logs see the proxy IP for everyone.
