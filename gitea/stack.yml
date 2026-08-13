@@ -125,35 +125,45 @@ services:
   #       max-size: "50m"
   #       max-file: "5"
 
+
   runner-new:
     image: gitea/runner:3.1.0
-    hostname: "runner-{{.Node.Hostname}}"
+    hostname: "runner-{{.Node.Hostname}}-{{.Task.Slot}}"
     environment:
       - TZ=${TZ}
-      # - GITEA_INSTANCE_URL=http://gitea_server:3000
       - GITEA_INSTANCE_URL=https://gitea.${DOMAIN}
       - GITEA_RUNNER_REGISTRATION_TOKEN_FILE=/run/secrets/gitea--global_runner_token
-      - GITEA_RUNNER_NAME=swarm-amd64
       - GITEA_RUNNER_EPHEMERAL=true
       - GITEA_RUNNER_LABELS=ubuntu-latest:docker://catthehacker/ubuntu:act-latest,linux-amd64:docker://catthehacker/ubuntu:act-latest
+      # Optional: uncomment together with the config.yaml volume below.
+      # - CONFIG_FILE=/config.yaml
     volumes:
-      # Each replica mounts ITS OWN node's daemon - job containers and
-      # pulled images land on whichever node ran the job
+      # Host socket = jobs run as sibling containers with full daemon
+      # access. All nodes in this cluster are managers, so this is
+      # cluster-admin reach (any swarm secret is mountable via
+      # `docker service create --secret ...`). ACCEPTED RISK: two trusted
+      # accounts only (owner + renovate). Residual path is supply-chain --
+      # a malicious dependency bump running install scripts in CI. If
+      # exposure is ever suspected, regenerate the registration token in
+      # admin settings; switch to the -dind image to remove this mount.
       - /var/run/docker.sock:/var/run/docker.sock
+      # Optional runner config (cache, container.options for per-job memory
+      # limits, etc). Test actions/cache reachability before relying on it:
+      # the cache server lives in this container on the overlay network,
+      # while jobs sit on the node bridge -- you may need cache.host set to
+      # an address routable from the bridge.
+      # - /mnt/cephfs/app_data/gitea/runner/config.yaml:/config.yaml:ro
+      # NOTE: no /data volume, on purpose -- ephemeral credentials are
+      # single-use and a persisted .runner file would break re-registration.
     secrets:
       - gitea--global_runner_token
     networks:
       - internal
     deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
-      # just one runner for now
-      # mode: global
-      # restart_policy:
-      #   condition: any
-      #   delay: 3s
+      replicas: 3
+      restart_policy:
+        condition: any
+        delay: 3s
       resources:
         limits:
           memory: 512M
@@ -172,7 +182,6 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
-
 secrets:
   gitea--pg_db:
     external: true
