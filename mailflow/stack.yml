@@ -84,7 +84,7 @@ services:
         delay: 10s
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     command: ["redis-server", "--save", "", "--loglevel", "warning"]
     # volumes:
     #   - redis_data:/data
