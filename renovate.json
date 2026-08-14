@@ -265,10 +265,6 @@
       "description": "Critical infra: PRs only, no auto-merge (manual review required) - overrides patch automerge above",
       "matchDatasources": ["docker"],
       "matchPackageNames": [
-        "crowdsecurity/crowdsec",
-        "traefik",
-        "gitea/gitea",
-        "gitea/act_runner",
         "ghcr.io/immich-app/immich-server",
         "ghcr.io/wg-easy/wg-easy"
       ],
