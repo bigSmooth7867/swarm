@@ -1,6 +1,6 @@
 services:
   nextcloud:
-    image: linuxserver/nextcloud:34.0.2-ls444
+    image: linuxserver/nextcloud:34.0.3-ls446
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
