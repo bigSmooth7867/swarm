@@ -1,6 +1,6 @@
 services:
   influxdb3-core:
-    image: influxdb:3.11.0-core
+    image: influxdb:3.11.1-core
     ports:
       - "8181:8181"
     command:
