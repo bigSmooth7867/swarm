@@ -23,11 +23,35 @@ services:
         parallelism: 1
         delay: 30s
         order: stop-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
       labels:
-        # --- copy your entire existing Traefik + Homepage label block here, unchanged ---
         - "traefik.enable=true"
+        - "traefik.http.routers.nextcloud.entrypoints=http"
+        - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN}`)"
+        - "traefik.http.middlewares.nextcloud-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.nextcloud.middlewares=nextcloud-https-redirect"
+        - "traefik.http.routers.nextcloud-secure.entrypoints=https"
+        - "traefik.http.routers.nextcloud-secure.rule=Host(`nextcloud.${DOMAIN}`)"
+        - "traefik.http.routers.nextcloud-secure.tls=true"
+        - "traefik.http.routers.nextcloud-secure.service=nextcloud"
         - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
-        # ... etc, identical to your current file
+        - "traefik.swarm.network=proxy"
+        - "traefik.http.middlewares.secureHeaders.headers.stsSeconds=15552000"
+        - "traefik.http.middlewares.secureHeaders.headers.stsIncludeSubdomains=true"
+        - "traefik.http.middlewares.secureHeaders.headers.stsPreload=true"
+        - "traefik.http.middlewares.secureHeaders.headers.frameDeny=true"
+        - "traefik.http.middlewares.secureHeaders.headers.customFrameOptionsValue=SAMEORIGIN"
+        - "traefik.http.middlewares.secureHeaders.headers.sslRedirect=true"
+        - "traefik.http.middlewares.secureHeaders.headers.contentTypeNosniff=true"
+        - "traefik.http.middlewares.secureHeaders.headers.browserXssFilter=true"
+        - "traefik.http.routers.nextcloud-secure.middlewares=secureHeaders"
+        - "homepage.group=Personal"
+        - "homepage.name=nextcloud"
+        - "homepage.icon=nextcloud.png"
+        - "homepage.href=https://nextcloud.${DOMAIN}"
     logging:
       driver: json-file
       options:
@@ -54,9 +78,17 @@ services:
         max-file: "3"
 
   nextcloud-redis:
-    # identical to your current redis service — keep the name `nextcloud-redis`
     image: redis:7.4-alpine
-    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction", "--save", "", "--appendonly", "no"]
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - ""
+      - --appendonly
+      - "no"
     networks:
       - internal
     deploy:
@@ -64,6 +96,21 @@ services:
       placement:
         constraints:
           - node.role == manager
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   nextcloud-data:
