@@ -1,10 +1,12 @@
 services:
   nextcloud:
-    image: nextcloud:34.0.2-apache
+    image: linuxserver/nextcloud:34.0.3-ls446
     environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
+      - /mnt/cephfs/app_data/nextcloud/config:/config
       - nextcloud-data:/data
     networks:
       - proxy
@@ -28,6 +30,7 @@ services:
         delay: 10s
         failure_action: rollback
       labels:
+        # TRAEFIK
         - "traefik.enable=true"
         - "traefik.http.routers.nextcloud.entrypoints=http"
         - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN}`)"
@@ -48,6 +51,7 @@ services:
         - "traefik.http.middlewares.secureHeaders.headers.contentTypeNosniff=true"
         - "traefik.http.middlewares.secureHeaders.headers.browserXssFilter=true"
         - "traefik.http.routers.nextcloud-secure.middlewares=secureHeaders"
+        # HOMEPAGE
         - "homepage.group=Personal"
         - "homepage.name=nextcloud"
         - "homepage.icon=nextcloud.png"
@@ -57,25 +61,6 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
-
-  nextcloud-cron:
-    image: nextcloud:34.0.2-apache
-    entrypoint: /cron.sh
-    volumes:
-      - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
-      - nextcloud-data:/data
-    networks:
-      - internal
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
 
   nextcloud-redis:
     image: redis:7.4-alpine
