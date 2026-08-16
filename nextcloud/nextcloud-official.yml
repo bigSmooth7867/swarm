@@ -4,7 +4,7 @@ services:
     environment:
       - TZ=${TZ}
     volumes:
-      - /mnt/cephfs/app_data/nextcloud-official/html:/var/www/html
+      - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
       - nextcloud-data:/data
     networks:
       - proxy
@@ -62,7 +62,7 @@ services:
     image: nextcloud:34.0.2-apache
     entrypoint: /cron.sh
     volumes:
-      - /mnt/cephfs/app_data/nextcloud-official/html:/var/www/html
+      - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
       - nextcloud-data:/data
     networks:
       - internal
