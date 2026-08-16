@@ -1,0 +1,80 @@
+services:
+  nextcloud:
+    image: nextcloud:34.0.2-apache
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /mnt/cephfs/app_data/nextcloud-official/html:/var/www/html
+      - nextcloud-data:/data
+    networks:
+      - proxy
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      labels:
+        # --- copy your entire existing Traefik + Homepage label block here, unchanged ---
+        - "traefik.enable=true"
+        - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+        # ... etc, identical to your current file
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  nextcloud-cron:
+    image: nextcloud:34.0.2-apache
+    entrypoint: /cron.sh
+    volumes:
+      - /mnt/cephfs/app_data/nextcloud-official/html:/var/www/html
+      - nextcloud-data:/data
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nextcloud-redis:
+    # identical to your current redis service — keep the name `nextcloud-redis`
+    image: redis:7.4-alpine
+    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction", "--save", "", "--appendonly", "no"]
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+volumes:
+  nextcloud-data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/ssdp1/nextcloud"
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: overlay

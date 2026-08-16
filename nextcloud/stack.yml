@@ -98,9 +98,6 @@ services:
         max-file: "3"
 
 volumes:
-  # NOTE: swarm NFS volume definitions are immutable. If you change the
-  # options below, run `docker volume rm nextcloud_nextcloud-data` on every
-  # node that created it, then redeploy.
   nextcloud-data:
     driver: local
     driver_opts:
