@@ -1,6 +1,6 @@
 services:
   nextcloud:
-    image: nextcloud:34.0.2-apache
+    image: nextcloud:34.0.3-apache
     environment:
       - TZ=${TZ}
       - POSTGRES_HOST=${POSTGRES_HOST}   # e.g. db.vcasaserver.com:5000 — consumed by db.config.php snippet
@@ -66,7 +66,7 @@ services:
         max-file: "5"
 
   nextcloud-cron:
-    image: nextcloud:34.0.2-apache   # keep in lockstep with nextcloud service
+    image: nextcloud:34.0.3-apache   # keep in lockstep with nextcloud service
     entrypoint: /cron.sh
     environment:
       - TZ=${TZ}
