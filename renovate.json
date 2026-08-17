@@ -204,6 +204,13 @@
       "prBodyNotes": ["[Release notes](https://github.com/netbirdio/netbird/releases)"]
     },
     {
+      "description": "Nextcloud - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["nextcloud"],
+      "sourceUrl": "https://github.com/nextcloud/server",
+      "prBodyNotes": ["[Release notes](https://github.com/nextcloud/server/releases)"]
+    },
+    {
       "description": "pgAdmin4 - add sourceUrl for changelog links",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["dpage/pgadmin4"],
@@ -269,6 +276,17 @@
         "ghcr.io/wg-easy/wg-easy"
       ],
       "automerge": false
+    },
+    {
+      "description": "Nextcloud: no automerge - every image bump (even patch) requires occ upgrade + verification, or the instance holds at the updater screen; majors must step one at a time - overrides patch automerge above",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["nextcloud"],
+      "automerge": false,
+      "separateMultipleMajor": true,
+      "labels": ["renovate", "occ-upgrade-required"],
+      "prBodyNotes": [
+        "⚠️ **Post-deploy steps required** — the instance holds at the 'use the command line updater' screen until this runs:\n```bash\nNC=$(sudo docker ps -qf name=nextcloud_nextcloud | head -1)\nsudo docker exec $NC su -s /bin/bash www-data -c \"php /var/www/html/occ upgrade\"\nsudo docker exec $NC su -s /bin/bash www-data -c \"php /var/www/html/occ status\"\nsudo docker exec $NC su -s /bin/bash www-data -c \"php /var/www/html/occ db:add-missing-indices\"\n```\nThen verify: OIDC login test — if URLs contain `index.php`, run `occ maintenance:update:htaccess` and retest. Desktop client should stay green.\n\n**Majors:** never skip a major version — Nextcloud only supports sequential major upgrades (34→35→36). Merge and complete each major PR before the next."
+      ]
     }
   ]
 }
