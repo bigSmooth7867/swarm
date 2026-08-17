@@ -3,6 +3,13 @@ services:
     image: nextcloud:34.0.3-apache
     environment:
       - TZ=${TZ}
+      - POSTGRES_HOST=${POSTGRES_HOST}   # e.g. db.vcasaserver.com:5000 — consumed by db.config.php snippet
+    secrets:
+      - nextcloud--pg_db
+      - nextcloud--pg_user
+      - nextcloud--pg_pass
+      - nextcloud--secret
+      - nextcloud--passwordsalt
     volumes:
       - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
       - nextcloud-data:/data
@@ -59,8 +66,17 @@ services:
         max-file: "5"
 
   nextcloud-cron:
-    image: nextcloud:34.0.3-apache
+    image: nextcloud:34.0.3-apache   # keep in lockstep with nextcloud service
     entrypoint: /cron.sh
+    environment:
+      - TZ=${TZ}
+      - POSTGRES_HOST=${POSTGRES_HOST}   # cron runs occ jobs — needs identical DB config
+    secrets:
+      - nextcloud--pg_db
+      - nextcloud--pg_user
+      - nextcloud--pg_pass
+      - nextcloud--secret
+      - nextcloud--passwordsalt
     volumes:
       - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
       - nextcloud-data:/data
@@ -111,6 +127,18 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+secrets:
+  nextcloud--pg_db:
+    external: true
+  nextcloud--pg_user:
+    external: true
+  nextcloud--pg_pass:
+    external: true
+  nextcloud--secret:
+    external: true
+  nextcloud--passwordsalt:
+    external: true
 
 volumes:
   nextcloud-data:
