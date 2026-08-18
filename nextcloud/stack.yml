@@ -10,6 +10,11 @@ services:
       - nextcloud--pg_pass
       - nextcloud--secret
       - nextcloud--passwordsalt
+    environment:
+      - TZ=${TZ}
+      - NEXTCLOUD_HOST=nextcloud.${DOMAIN}
+      - POSTGRES_HOST=db.${DOMAIN}:5000
+      - PGSSLMODE=require
     volumes:
       - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
       - nextcloud-data:/data
