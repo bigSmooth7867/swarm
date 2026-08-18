@@ -3,18 +3,15 @@ services:
     image: nextcloud:34.0.3-apache
     environment:
       - TZ=${TZ}
-      - POSTGRES_HOST=${POSTGRES_HOST}   # e.g. db.vcasaserver.com:5000 — consumed by db.config.php snippet
+      - NEXTCLOUD_HOST=nextcloud.${DOMAIN}
+      - POSTGRES_HOST=db.${DOMAIN}:5000
+      - PGSSLMODE=require
     secrets:
       - nextcloud--pg_db
       - nextcloud--pg_user
       - nextcloud--pg_pass
       - nextcloud--secret
       - nextcloud--passwordsalt
-    environment:
-      - TZ=${TZ}
-      - NEXTCLOUD_HOST=nextcloud.${DOMAIN}
-      - POSTGRES_HOST=db.${DOMAIN}:5000
-      - PGSSLMODE=require
     volumes:
       - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
       - nextcloud-data:/data
@@ -75,7 +72,9 @@ services:
     entrypoint: /cron.sh
     environment:
       - TZ=${TZ}
-      - POSTGRES_HOST=${POSTGRES_HOST}   # cron runs occ jobs — needs identical DB config
+      - NEXTCLOUD_HOST=nextcloud.${DOMAIN}
+      - POSTGRES_HOST=db.${DOMAIN}:5000   # cron runs occ jobs — needs identical DB config
+      - PGSSLMODE=require
     secrets:
       - nextcloud--pg_db
       - nextcloud--pg_user
