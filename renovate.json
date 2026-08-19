@@ -10,6 +10,11 @@
   "branchConcurrentLimit": 40,
   "internalChecksFilter": "none",
   "internalChecksAsSuccess": true,
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "labels": ["renovate", "security"],
+    "prPriority": 10
+  },
   "platformAutomerge": false,
   "automergeStrategy": "squash",
   "hostRules": [
