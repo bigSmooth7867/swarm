@@ -1,6 +1,6 @@
 services:
   donut-sync:
-    image: donutbrowser/donut-sync:v0.29.4  # consider pinning a tag/digest in prod
+    image: donutbrowser/donut-sync:v0.29.5  # consider pinning a tag/digest in prod
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
