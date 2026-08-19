@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ghcr.io/maathimself/mailflow-frontend:2.9.0
+    image: ghcr.io/maathimself/mailflow-frontend:3.1.4
     # volumes:
     #   - ./certs:/etc/nginx/ssl
     healthcheck:
@@ -41,7 +41,7 @@ services:
         - "homepage.href=https://mailflow.${DOMAIN}"
 
   backend:
-    image: ghcr.io/maathimself/mailflow-backend:2.9.0
+    image: ghcr.io/maathimself/mailflow-backend:3.1.4
     extra_hosts:
       - "db.${DOMAIN}:${PG_IP}"
     entrypoint: /bin/sh
