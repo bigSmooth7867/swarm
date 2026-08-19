@@ -92,8 +92,8 @@ services:
   #   image: gitea/runner:2.2.0
   #   volumes:
   #     - /var/run/docker.sock:/var/run/docker.sock
-  #     - /mnt/cephfs/app_data/gitea/runner/config.yaml:/config.yaml:ro
-  #     - /mnt/cephfs/app_data/gitea/runner/data:/data #dont need to bind mount it. need to confirm
+  #     - /mnt/cephfs/app_data/gitea-runner/config.yaml:/config.yaml:ro
+  #     - /mnt/cephfs/app_data/gitea-runner/data:/data #dont need to bind mount it. need to confirm
   #   environment:
   #     - TZ=${TZ}
   #     - CONFIG_FILE=/config.yaml
