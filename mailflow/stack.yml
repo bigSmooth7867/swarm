@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ghcr.io/maathimself/mailflow-frontend:2.7.1
+    image: ghcr.io/maathimself/mailflow-frontend:2.9.0
     # volumes:
     #   - ./certs:/etc/nginx/ssl
     healthcheck:
