@@ -41,7 +41,7 @@ services:
         - "homepage.href=https://mailflow.${DOMAIN}"
 
   backend:
-    image: ghcr.io/maathimself/mailflow-backend:2.7.1
+    image: ghcr.io/maathimself/mailflow-backend:2.9.0
     extra_hosts:
       - "db.${DOMAIN}:${PG_IP}"
     entrypoint: /bin/sh
