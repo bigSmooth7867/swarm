@@ -1,5 +1,3 @@
-#### ADD S3 Storage
-
 services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.10.2
