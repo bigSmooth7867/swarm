@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.7.10
+    image: traefik:v3.7.11
     hostname: "traefik-{{.Node.Hostname}}"
     ports:
       - target: 80
