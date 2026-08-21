@@ -109,7 +109,7 @@ services:
         max-file: "5"
 
   gotenberg:
-    image: gotenberg/gotenberg:8.35.0
+    image: gotenberg/gotenberg:8.36.0
     command:
       - "gotenberg"
       - "--chromium-disable-javascript=true"
