@@ -1,6 +1,6 @@
 services:
   newt:
-    image: fosrl/newt:1.15.0
+    image: fosrl/newt:1.16.0
     deploy:
       replicas: 1
       restart_policy:
