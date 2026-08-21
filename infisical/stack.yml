@@ -1,0 +1,74 @@
+services:
+  backend:
+    image: infisical/infisical:v0.162.22
+    environment:
+      - NODE_ENV=production
+      - DB_CONNECTION_URI=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db.${DOMAIN}:5000/${POSTGRES_DB}?sslmode=require
+      - AUTH_SECRET=${AUTH_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - REDIS_URL=redis://redis:6379
+      - SITE_URL=https://infisical.${DOMAIN}
+      - TELEMETRY_ENABLED=false
+    networks:
+      - internal
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.infisical.entrypoints=http"
+        - "traefik.http.routers.infisical.rule=Host(`infisical.${DOMAIN}`)" 
+        - "traefik.http.middlewares.infisical-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.infisical.middlewares=infisical-https-redirect"
+        - "traefik.http.routers.infisical-secure.entrypoints=https"
+        - "traefik.http.routers.infisical-secure.rule=Host(`infisical.${DOMAIN}`)" 
+        - "traefik.http.routers.infisical-secure.tls=true"
+        - "traefik.http.routers.infisical-secure.service=infisical"
+        - "traefik.http.services.infisical.loadbalancer.server.port=8080"
+        # Network 
+        - "traefik.swarm.network=proxy"
+
+  redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: overlay
