@@ -1,6 +1,6 @@
 services:
   netbird:
-    image: netbirdio/netbird:0.77.0 #rootless
+    image: netbirdio/netbird:0.77.1 #rootless
     hostname: srv-swarm-01
     entrypoint: /bin/sh
     command: >
