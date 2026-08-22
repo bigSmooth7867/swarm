@@ -75,7 +75,7 @@ services:
         - homepage.href=https://radarr.${DOMAIN}
 
   sonarr:
-    image: linuxserver/sonarr:4.0.19.2979-ls321
+    image: linuxserver/sonarr:4.0.19.2979-ls322
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
