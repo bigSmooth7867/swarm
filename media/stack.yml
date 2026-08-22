@@ -113,7 +113,7 @@ services:
         - "homepage.href=https://sonarr.${DOMAIN}"
 
   profilarr:
-    image: ghcr.io/dictionarry-hub/profilarr:2.1.0
+    image: ghcr.io/dictionarry-hub/profilarr:2.2.0
     # ports:
     #   - 6868:6868
     volumes:
