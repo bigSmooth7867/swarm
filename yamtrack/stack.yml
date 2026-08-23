@@ -1,6 +1,6 @@
 services:
   yamtrack:
-    image: ghcr.io/fuzzygrim/yamtrack:0.26.1
+    image: ghcr.io/fuzzygrim/yamtrack:0.26.2
     secrets:
       - yamtrack--pg_user
       - yamtrack--pg_pass
