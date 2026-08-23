@@ -178,7 +178,7 @@ services:
   # Immich Public Proxy
   # ============================================================
   immich-public-proxy:
-    image: alangrainger/immich-public-proxy:3.2.0
+    image: alangrainger/immich-public-proxy:3.2.1
     environment:
       IMMICH_URL: http://immich-server:2283
       PUBLIC_BASE_URL: https://pics.${DOMAIN}
