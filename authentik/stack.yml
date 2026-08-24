@@ -36,7 +36,7 @@ services:
       - authentik--s3_access_key
       - authentik--s3_secret_key
     volumes:
-      - /mnt/cephfs/app_data/authentik/data:/data
+      - /mnt/cephfs/app_data/authentik/custom-templates:/templates
     networks:
       - proxy
     deploy:
@@ -119,7 +119,7 @@ services:
       - authentik--s3_access_key
       - authentik--s3_secret_key
     volumes:
-      - /mnt/cephfs/app_data/authentik/data:/data
+      - /mnt/cephfs/app_data/authentik/custom-templates:/templates
       - /mnt/cephfs/app_data/authentik/certs:/certs
     networks:
       - proxy
