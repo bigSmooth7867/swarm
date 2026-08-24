@@ -37,7 +37,7 @@ services:
         - "homepage.href=https://prowlarr.${DOMAIN}"
 
   radarr:
-    image: linuxserver/radarr:6.3.0.10514-ls313
+    image: linuxserver/radarr:6.3.0.10514-ls314
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
