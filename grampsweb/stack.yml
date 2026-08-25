@@ -25,10 +25,16 @@ services:
       - gramps--s3_access_key
       - gramps--s3_secret_key
     volumes:
-      - /mnt/cephfs/app_data/gramps/gramps_thumb_cache:/app/thumbnail_cache
-      - /mnt/cephfs/app_data/gramps/gramps_cache:/app/cache
-      - /mnt/cephfs/app_data/gramps/gramps_tmp:/tmp
+      # Regenerable caches on node-local disk (thumbnails rebuilt from S3 originals)
+      - gramps-thumb-cache:/app/thumbnail_cache
+      - gramps-cache:/app/cache
+      # /tmp in RAM — import/export/report scratch, nothing persistent
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: 536870912  # 512M
       - /mnt/cephfs/app_data/gramps/gramps_config/config.js:/app/static/config.js
+      # Tree registration (tiny but must persist — tree data itself is in Postgres)
       - /mnt/cephfs/app_data/gramps/gramps_db:/root/.gramps/grampsdb
       - /mnt/cephfs/app_data/gramps/gramps_db:/root/gramps/grampsdb
     environment:
@@ -117,9 +123,15 @@ services:
       - gramps--s3_access_key
       - gramps--s3_secret_key
     volumes:
-      - /mnt/cephfs/app_data/gramps/gramps_thumb_cache:/app/thumbnail_cache
-      - /mnt/cephfs/app_data/gramps/gramps_cache:/app/cache
-      - /mnt/cephfs/app_data/gramps/gramps_tmp:/tmp
+      # Regenerable caches on node-local disk (thumbnails rebuilt from S3 originals)
+      - gramps-thumb-cache:/app/thumbnail_cache
+      - gramps-cache:/app/cache
+      # /tmp in RAM — import/export/report scratch, nothing persistent
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: 536870912  # 512M
+      # Tree registration (tiny but must persist — tree data itself is in Postgres)
       - /mnt/cephfs/app_data/gramps/gramps_db:/root/.gramps/grampsdb
       - /mnt/cephfs/app_data/gramps/gramps_db:/root/gramps/grampsdb
     environment:
@@ -222,3 +234,9 @@ networks:
     attachable: false
   proxy:
     external: true
+
+volumes:
+  gramps-thumb-cache:
+    driver: local
+  gramps-cache:
+    driver: local
