@@ -12,7 +12,7 @@ services:
       FILEBROWSER_CONFIG: "data/config.yaml"
       TZ: "${TZ}"
     volumes:
-      - '/mnt/truenas/tank/roms/downloads/jdownloader/to_print:/folder' # Never mount root "/" directory to docker, always choose a sub-folder with your data.
+      - 'to_print:/folder' # Never mount root "/" directory to docker, always choose a sub-folder with your data.
       - '/home/nexus/local/filebrowser/data:/home/filebrowser/data' # mount the data folder you created with the config file.
       # Advanced: If you plan to run with a different user besides root or filebrowser, you will need to mount a tmp directory.
       #- './tmp/:/home/filebrowser/tmp/'
@@ -46,6 +46,14 @@ services:
         - homepage.name=filebrowser
         - homepage.icon=filebrowser.png
         - homepage.href=https://filebrowser.${DOMAIN}
+
+volumes:
+  to_print:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,nfsvers=4,rw,hard,noatime
+      device: ":/mnt/tank/roms/downloads/jdownloader/to_print"
 
 networks:
   proxy:
