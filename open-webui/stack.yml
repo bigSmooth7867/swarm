@@ -1,3 +1,19 @@
+      # NOTE: RAG embeddings currently run LOCALLY (sentence-transformers
+      # all-MiniLM-L6-v2, ~900M cached in open-webui-cache volume below).
+      #
+      # TODO when GPU box is built:
+      #   1. Serve an embedding model (e.g. nomic-embed-text) behind LiteLLM
+      #   2. Switch embedding engine to OpenAI-compatible:
+      #        RAG_EMBEDDING_ENGINE=openai
+      #        RAG_OPENAI_API_BASE_URL=https://litellm.${DOMAIN}/v1
+      #        RAG_OPENAI_API_KEY=...
+      #        RAG_EMBEDDING_MODEL=<model name in LiteLLM>
+      #   3. RE-INDEX all knowledge bases — old MiniLM vectors are
+      #      incompatible with a new model (RAG silently degrades otherwise).
+      #      Source files are safe in Garage; vectors are rebuildable.
+      #   4. Remove the open-webui-cache volume + its mount -> zero-volume
+      #   Same trip: point AUDIO_STT_* at Whisper on the GPU box.
+
 services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.10.2
