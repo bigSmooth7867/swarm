@@ -144,7 +144,7 @@ services:
       - MEILI_LOG_LEVEL=WARN
       - MEILI_NO_ANALYTICS=true
     volumes:
-      - /mnt/cephfs/app_data/linkwarden/meili_data:/meili_data
+      - /mnt/cephfs/app_data/linkwarden_meili-data:/meili_data
     networks:
       - internal
     deploy:
