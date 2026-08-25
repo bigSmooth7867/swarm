@@ -10,7 +10,7 @@ services:
     # ports:
     #   - "8080:8080"
     volumes:
-      - /mnt/truenas/ssdp1/media/maptiler/data/:/data
+      - maptiler-data:/data
       - /mnt/cephfs/app_data/maptiler/config.json:/config.json:ro
     # command: ["--silent", "--file", "osm-2020-02-10-v3.11_us_florida.mbtiles"]
     command: ["-c", "/config.json", "--silent"]
@@ -41,6 +41,14 @@ services:
         - "homepage.href=https://maps.${DOMAIN}"
         # DNSWEAVER
         - "dnsweaver.hostname=maps.${DOMAIN}"
+
+volumes:
+  maptiler-data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,nfsvers=4,ro,soft,timeo=150,retrans=3,noatime
+      device: ":/mnt/ssdp1/media/maptiler/data"
 
 networks:
   proxy:
