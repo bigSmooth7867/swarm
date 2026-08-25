@@ -94,6 +94,7 @@ services:
       - ENABLE_IMAGE_GENERATION=False
       - ENABLE_COMMUNITY_SHARING=False
       - CORS_ALLOW_ORIGIN=https://open-webui.${DOMAIN}
+      - ENABLE_OLLAMA_API=False
     #API Key Endpoint Restrictions
       - ENABLE_API_KEYS=True
     healthcheck:
