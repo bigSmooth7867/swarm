@@ -8,12 +8,9 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - /mnt/truenas/ssdp1/media/audio/audiobooks:/audiobooks
-      - /mnt/truenas/ssdp1/media/audio/blinkist:/blinkist
-      - /mnt/truenas/ssdp1/media/audio/podcast:/podcast
-      # - /mnt/truenas/ssdp1/media/audio/soundcloud/soundcloud likes:/soundcloud
-      # - /mnt/truenas/ssdp1/media/audio/soundcloud2:/soundcloud
-      # - ./podcasts:/podcasts
+      - audiobooks:/audiobooks
+      - blinkist:/blinkist
+      - podcast:/podcast
       # The metadata directory can be stored anywhere on your computer
       # you are running ABS on
       - /home/nexus/docker-resources/audiobookshelf/metadata:/metadata
@@ -50,6 +47,26 @@ services:
         - "homepage.name=audiobookshelf"
         - "homepage.icon=audiobookshelf.png"
         - "homepage.href=https://audiobooks.${DOMAIN}"
+
+volumes:
+  audiobooks:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,nfsvers=4,rw,hard,noatime
+      device: ":/mnt/ssdp1/media/audio/audiobooks"
+  blinkist:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,nfsvers=4,rw,hard,noatime
+      device: ":/mnt/ssdp1/media/audio/blinkist"
+  podcast:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,nfsvers=4,rw,hard,noatime
+      device: ":/mnt/ssdp1/media/audio/podcast"
 
 networks:
   proxy:
