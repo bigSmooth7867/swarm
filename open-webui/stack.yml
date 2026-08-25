@@ -13,8 +13,15 @@ services:
         done
         exec bash start.sh
     volumes:
-      - /mnt/cephfs/app_data/open-webui:/app/backend/data
-      # - ${NFS_DIR}/ssdp1/docker/open-webui/uploads:/app/backend/data/uploads
+      # Scratch only (audio temp, upload staging) — DB is Postgres, vectors
+      # pgvector, files S3, so nothing here needs to survive a restart
+      - type: tmpfs
+        target: /app/backend/data
+        tmpfs:
+          size: 1073741824  # 1G
+      # Model/HF cache (sentence-transformers, whisper, xet, etc.) on node-local
+      # disk instead of RAM — disposable, but avoid re-downloading every restart
+      - open-webui-cache:/app/backend/data/cache
     secrets:
       - OAUTH_CLIENT_SECRET
       - WEBUI_SECRET_KEY
@@ -143,3 +150,7 @@ secrets:
 networks:
   proxy:
     external: true
+
+volumes:
+  open-webui-cache:
+    driver: local
