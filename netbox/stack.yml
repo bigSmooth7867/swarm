@@ -53,15 +53,20 @@ x-netbox-common: &netbox-common
       target: oidc_secret
     - source: netbox--api_token_pepper_1
       target: api_token_pepper_1
+    # S3 (Garage) — targets must match what config/s3.py reads
+    - source: netbox--s3_access_key
+      target: s3_access_key
+    - source: netbox--s3_secret_key
+      target: s3_secret_key
 
   networks:
     - netbox-internal
 
   volumes:
-    - /mnt/cephfs/app_data/netbox/media:/opt/netbox/netbox/media
-    - /mnt/cephfs/app_data/netbox/reports:/opt/netbox/netbox/reports
-    - /mnt/cephfs/app_data/netbox/scripts:/opt/netbox/netbox/scripts
+    # Media, reports, and scripts now live in Garage S3 (bucket: netbox)
+    # via config/s3.py — no data volumes needed.
     - /mnt/cephfs/app_data/netbox/config/authentik.py:/etc/netbox/config/authentik.py:ro
+    - /mnt/cephfs/app_data/netbox/config/s3.py:/etc/netbox/config/s3.py:ro
     - /mnt/cephfs/app_data/netbox/config/custom_pipeline.py:/opt/netbox/netbox/netbox/custom_pipeline.py:ro
 
 services:
@@ -211,4 +216,8 @@ secrets:
   netbox--oidc_secret:
     external: true
   netbox--api_token_pepper_1:
+    external: true
+  netbox--s3_access_key:
+    external: true
+  netbox--s3_secret_key:
     external: true
