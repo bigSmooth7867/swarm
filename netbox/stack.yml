@@ -11,21 +11,15 @@ x-netbox-common: &netbox-common
     PGSSLCERT: "/nonexistent"
     PGSSLKEY: "/nonexistent"
 
-    # --- Redis: tasks (shared instance on redisnet) ---
+    # --- Redis: tasks (shared instance on internal) ---
     REDIS_HOST: "netbox-redis"
     REDIS_PORT: "6379"
-    # REDIS_USERNAME: "netbox_user"
     REDIS_DATABASE: "0"
-    # REDIS_SSL: "false"
-    # REDIS_KEY_PREFIX: "netbox:"
 
-    # --- Redis: cache (shared instance on redisnet) ---
+    # --- Redis: cache (shared instance on internal) ---
     REDIS_CACHE_HOST: "netbox-redis"
     REDIS_CACHE_PORT: "6379"
-    # REDIS_CACHE_USERNAME: "netbox_cache"
     REDIS_CACHE_DATABASE: "1"
-    # REDIS_CACHE_SSL: "false"
-    # REDIS_CACHE_KEY_PREFIX: "nbcache:"
 
     # --- App ---
     ALLOWED_HOSTS: "netbox.${DOMAIN} localhost"
@@ -55,10 +49,6 @@ x-netbox-common: &netbox-common
       target: db_password
     - source: netbox--superuser_password
       target: superuser_password
-    # - source: netbox--redis_password
-    #   target: redis_password
-    # - source: netbox--redis_cache_password
-    #   target: redis_cache_password
     - source: netbox--oidc_secret
       target: oidc_secret
     - source: netbox--api_token_pepper_1
@@ -66,7 +56,6 @@ x-netbox-common: &netbox-common
 
   networks:
     - netbox-internal
-    # - redisnet
 
   volumes:
     - /mnt/cephfs/app_data/netbox/media:/opt/netbox/netbox/media
@@ -75,15 +64,12 @@ x-netbox-common: &netbox-common
     - /mnt/cephfs/app_data/netbox/config/authentik.py:/etc/netbox/config/authentik.py:ro
     - /mnt/cephfs/app_data/netbox/config/custom_pipeline.py:/opt/netbox/netbox/netbox/custom_pipeline.py:ro
 
-
 services:
-
   netbox:
     <<: *netbox-common
     networks:
       - netbox-internal
       - proxy
-      # - redisnet
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/login/"]
       start_period: 180s
@@ -128,7 +114,6 @@ services:
         - "homepage.name=NetBox"
         - "homepage.icon=netbox.png"
         - "homepage.href=https://netbox.${DOMAIN}"
-
 
   netbox-worker:
     <<: *netbox-common
@@ -215,9 +200,6 @@ networks:
     attachable: false
   proxy:
     external: true
-  # redisnet:
-  #   external: true
-
 
 secrets:
   netbox--secret_key:
@@ -228,9 +210,5 @@ secrets:
     external: true
   netbox--oidc_secret:
     external: true
-  # netbox--redis_password:
-  #   external: true
-  # netbox--redis_cache_password:
-  #   external: true
   netbox--api_token_pepper_1:
     external: true
