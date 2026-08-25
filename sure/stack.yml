@@ -13,6 +13,8 @@ services:
         export ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=$$(cat /run/secrets/sure--primary_key)
         export ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=$$(cat /run/secrets/sure--deterministic_key)
         export ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=$$(cat /run/secrets/sure--key_derivation_salt)
+        export GENERIC_S3_ACCESS_KEY_ID=$$(cat /run/secrets/sure--s3_access_key_id)
+        export GENERIC_S3_SECRET_ACCESS_KEY=$$(cat /run/secrets/sure--s3_secret_access_key)
         exec /rails/bin/docker-entrypoint "$$@"
       - "--"
     command: ./bin/rails server
@@ -39,6 +41,14 @@ services:
       PGSSLMODE: require
       # Redis (dedicated, stack-internal)
       REDIS_URL: redis://sure-redis:6379/0
+      # Active Storage -> Garage (S3-compatible)
+      ACTIVE_STORAGE_SERVICE: generic_s3
+      GENERIC_S3_ENDPOINT: https://s3.${DOMAIN}
+      GENERIC_S3_BUCKET: sure
+      GENERIC_S3_REGION: us-east-1
+      GENERIC_S3_FORCE_PATH_STYLE: "true"
+      # GENERIC_S3_ACCESS_KEY_ID: injected via Docker secret
+      # GENERIC_S3_SECRET_ACCESS_KEY: injected via Docker secret
       # OIDC / SSO
       OIDC_CLIENT_ID: UU9GwucbxEl1H5f2gvCxt6CJal7E3FutAMrkHv7b
       # OIDC_CLIENT_SECRET: injected via Docker secret
@@ -72,8 +82,6 @@ services:
       SIMPLEFIN_DEBUG_RAW: "false"
       SIMPLEFIN_INCLUDE_PENDING: "true"
       RAILS_LOG_LEVEL: warn
-    volumes:
-      - /mnt/cephfs/app_data/sure/app-storage:/rails/storage
     networks:
       - sure-internal
       - proxy
@@ -86,6 +94,8 @@ services:
       - sure--primary_key
       - sure--deterministic_key
       - sure--key_derivation_salt
+      - sure--s3_access_key_id
+      - sure--s3_secret_access_key
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/up"]
       interval: 30s
@@ -134,6 +144,8 @@ services:
         export ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=$$(cat /run/secrets/sure--primary_key)
         export ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=$$(cat /run/secrets/sure--deterministic_key)
         export ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=$$(cat /run/secrets/sure--key_derivation_salt)
+        export GENERIC_S3_ACCESS_KEY_ID=$$(cat /run/secrets/sure--s3_access_key_id)
+        export GENERIC_S3_SECRET_ACCESS_KEY=$$(cat /run/secrets/sure--s3_secret_access_key)
         exec /rails/bin/docker-entrypoint "$$@"
       - "--"
     command: bundle exec sidekiq
@@ -160,6 +172,14 @@ services:
       PGSSLMODE: require
       # Redis (dedicated, stack-internal)
       REDIS_URL: redis://sure-redis:6379/0
+      # Active Storage -> Garage (S3-compatible)
+      ACTIVE_STORAGE_SERVICE: generic_s3
+      GENERIC_S3_ENDPOINT: https://s3.${DOMAIN}
+      GENERIC_S3_BUCKET: sure
+      GENERIC_S3_REGION: us-east-1
+      GENERIC_S3_FORCE_PATH_STYLE: "true"
+      # GENERIC_S3_ACCESS_KEY_ID: injected via Docker secret
+      # GENERIC_S3_SECRET_ACCESS_KEY: injected via Docker secret
       # OIDC / SSO
       OIDC_CLIENT_ID: UU9GwucbxEl1H5f2gvCxt6CJal7E3FutAMrkHv7b
       # OIDC_CLIENT_SECRET: injected via Docker secret
@@ -178,8 +198,6 @@ services:
       SIMPLEFIN_DEBUG_RAW: "false"
       SIMPLEFIN_INCLUDE_PENDING: "true"
       RAILS_LOG_LEVEL: warn
-    volumes:
-      - /mnt/cephfs/app_data/sure/app-storage:/rails/storage
     networks:
       - sure-internal
     secrets:
@@ -191,6 +209,8 @@ services:
       - sure--primary_key
       - sure--deterministic_key
       - sure--key_derivation_salt
+      - sure--s3_access_key_id
+      - sure--s3_secret_access_key
     deploy:
       replicas: 1
       restart_policy:
@@ -251,6 +271,10 @@ secrets:
   sure--deterministic_key:
     external: true
   sure--key_derivation_salt:
+    external: true
+  sure--s3_access_key_id:
+    external: true
+  sure--s3_secret_access_key:
     external: true
 
 networks:
