@@ -150,20 +150,34 @@ services:
 
   loki:
     image: grafana/loki:3.7.6
-    command: -config.file=/etc/loki/loki-config.yaml
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        export LOKI_S3_ACCESS_KEY_ID=$$(cat /run/secrets/loki--s3_access_key)
+        export LOKI_S3_SECRET_ACCESS_KEY=$$(cat /run/secrets/loki--s3_secret_key)
+        exec /usr/bin/loki "$$@"
+      - --
+    command:
+      - -config.file=/etc/loki/loki-config.yaml
+      - -config.expand-env=true
     stop_grace_period: 60s
+    secrets:
+      - loki--s3_access_key
+      - loki--s3_secret_key
     volumes:
-      - /home/nexus/local/loki/config/loki-config.yaml:/etc/loki/loki-config.yaml:ro
-      - /home/nexus/local/loki/data:/loki
+      # Config on cephfs (read-once at startup, no locking concerns)
+      - /mnt/cephfs/app_data/loki/config/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      # Transient local state only: ingester WAL, tsdb index scratch, caches.
+      # Chunks + index live in Garage S3 (bucket: loki-data).
+      - loki-local:/loki
     networks:
       - internal
       - proxy
     deploy:
-      # replicas MUST stay 1 - and data now lives only on swarm-02.
+      # Single-binary mode: replicas MUST stay 1. Data is in S3 now, so the
+      # node pin is no longer required — a reschedule only costs a cold cache.
       replicas: 1
-      placement:
-        constraints:
-          - node.hostname == swarm-02
       resources:
         limits:
           memory: 2G
@@ -227,6 +241,8 @@ services:
 
 volumes:
   alloy-data:
+  loki-local:
+    driver: local
 
 networks:
   internal:
@@ -243,4 +259,8 @@ secrets:
   grafana--pg_pass:
     external: true
   grafana--gf_rendering_renderer_token:
+    external: true
+  loki--s3_access_key:
+    external: true
+  loki--s3_secret_key:
     external: true
