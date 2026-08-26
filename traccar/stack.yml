@@ -21,7 +21,7 @@ services:
       - |
         export DATABASE_PASSWORD=$$(cat /run/secrets/traccar--pg_pass)
         export OPENID_CLIENT_SECRET=$$(cat /run/secrets/traccar--oidc_client_secret)
-        exec java -Djava.net.preferIPv4Stack=true -Xms512m -Xmx512m \
+        exec /opt/traccar/jre/bin/java -Djava.net.preferIPv4Stack=true -Xms512m -Xmx512m \
           -jar tracker-server.jar conf/traccar.xml
     secrets:
       - traccar--pg_pass
