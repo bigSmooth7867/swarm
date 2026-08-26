@@ -43,6 +43,26 @@ services:
       - PGID=${PGID}
       - TZ=Etc/UTC
       - UMASK=002
+      # Config pinned via env (overrides config.xml) — state lives in Postgres.
+      # DB names/users MUST match the values in your current config.xml.
+      - RADARR__SERVER__PORT=7878
+      - RADARR__POSTGRES__HOST=db.${DOMAIN}
+      - RADARR__POSTGRES__PORT=5000
+      - RADARR__POSTGRES__USER=radarr_user
+      - RADARR__POSTGRES__MAINDB=radarr-main
+      - RADARR__POSTGRES__LOGDB=radarr-log
+      - FILE__RADARR__POSTGRES__PASSWORD=/run/secrets/radarr--pg_pass
+      # Pin the API key so integrations (Prowlarr etc.) survive cache wipes
+      - FILE__RADARR__AUTH__APIKEY=/run/secrets/radarr--api_key
+      # Preserve auth/behavior settings from the old config.xml so a fresh
+      # cache volume doesn't reset them to first-run defaults
+      - RADARR__AUTH__METHOD=Forms
+      - RADARR__AUTH__REQUIRED=DisabledForLocalAddresses
+      - RADARR__LOG__ANALYTICSENABLED=False
+      - RADARR__APP__INSTANCENAME=Radarr
+    secrets:
+      - radarr--pg_pass
+      - radarr--api_key
     volumes:
       - /mnt/cephfs/app_data/radarr/data:/config
       - media-data:/data
@@ -81,6 +101,26 @@ services:
       - PGID=${PGID}
       - TZ=Etc/UTC
       - UMASK=002
+      # Config pinned via env (overrides config.xml) — state lives in Postgres.
+      # DB names/users MUST match the values in your current config.xml.
+      - SONARR__SERVER__PORT=8989
+      - SONARR__POSTGRES__HOST=db.${DOMAIN}
+      - SONARR__POSTGRES__PORT=5000
+      - SONARR__POSTGRES__USER=sonarr_user
+      - SONARR__POSTGRES__MAINDB=sonarr-main
+      - SONARR__POSTGRES__LOGDB=sonarr-log
+      - FILE__SONARR__POSTGRES__PASSWORD=/run/secrets/sonarr--pg_pass
+      # Pin the API key so integrations (Prowlarr etc.) survive cache wipes
+      - FILE__SONARR__AUTH__APIKEY=/run/secrets/sonarr--api_key
+      # Preserve current auth/behavior settings (Sonarr uses Basic/Enabled,
+      # unlike Radarr's Forms — matches its existing config.xml)
+      - SONARR__AUTH__METHOD=Basic
+      - SONARR__AUTH__REQUIRED=Enabled
+      - SONARR__LOG__ANALYTICSENABLED=False
+      - SONARR__APP__INSTANCENAME=Sonarr
+    secrets:
+      - sonarr--pg_pass
+      - sonarr--api_key
     volumes:
       - /mnt/cephfs/app_data/sonarr/data:/config
       - media-data:/data
@@ -297,6 +337,14 @@ secrets:
   profilarr--api_key:
     external: true
   profilarr--oidc_client_secret:
+    external: true
+  radarr--pg_pass:
+    external: true
+  radarr--api_key:
+    external: true
+  sonarr--pg_pass:
+    external: true
+  sonarr--api_key:
     external: true
 
 networks:
