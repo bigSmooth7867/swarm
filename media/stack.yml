@@ -225,7 +225,7 @@ services:
         - "homepage.href=https://profilarr.${DOMAIN}"
 
   sabnzbd:
-    image: linuxserver/sabnzbd:5.1.1-ls267
+    image: linuxserver/sabnzbd:5.1.2-ls269
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
