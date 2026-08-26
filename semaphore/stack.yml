@@ -11,12 +11,13 @@ services:
       - SEMAPHORE_DB=semaphore_db
       - SEMAPHORE_DB_OPTIONS={"sslmode":"require"}
 
-      # Security — all three keys pinned; config volume no longer needed
+      # Security — all three keys pinned; stateless (no config volume)
       - SEMAPHORE_ACCESS_KEY_ENCRYPTION_FILE=/run/secrets/semaphore--access_key
       - SEMAPHORE_COOKIE_HASH_FILE=/run/secrets/semaphore--cookie_hash
       - SEMAPHORE_COOKIE_ENCRYPTION_FILE=/run/secrets/semaphore--cookie_encryption
 
-      # # Initial admin user (only used on first run)
+      # Admin user (setup runs every boot when stateless; collision with the
+      # existing user prints a harmless "disregard" warning and continues)
       - SEMAPHORE_ADMIN=admin
       - SEMAPHORE_ADMIN_NAME=Admin
       - SEMAPHORE_ADMIN_EMAIL=admin@${DOMAIN}
@@ -28,13 +29,13 @@ services:
       - ANSIBLE_HOST_KEY_CHECKING=false
       - TZ=${TZ}
 
-      # Authentik OIDC - uses file-based secrets for client_id and client_secret
+      # Authentik OIDC — client_id inline (public identifier), secret stays file-based
       - >-
         SEMAPHORE_OIDC_PROVIDERS={
           "authentik": {
             "display_name": "Sign in with Authentik",
             "provider_url": "https://auth.${DOMAIN}/application/o/semaphore/",
-            "client_id_file": "/run/secrets/semaphore--oidc_client_id",
+            "client_id": "yq4lZTNe21nvRMgSZNc65u6S87am6V95YaCxntsN",
             "client_secret_file": "/run/secrets/semaphore--oidc_client_secret",
             "redirect_url": "https://semaphore.${DOMAIN}/api/auth/oidc/authentik/redirect/",
             "scopes": ["openid", "profile", "email"],
@@ -49,7 +50,6 @@ services:
       - semaphore--cookie_hash
       - semaphore--cookie_encryption
       - semaphore--admin_password
-      - semaphore--oidc_client_id
       - semaphore--oidc_client_secret
     networks:
       - proxy
@@ -92,8 +92,6 @@ secrets:
   semaphore--cookie_encryption:
     external: true
   semaphore--admin_password:
-    external: true
-  semaphore--oidc_client_id:
     external: true
   semaphore--oidc_client_secret:
     external: true
