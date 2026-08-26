@@ -1,6 +1,6 @@
 services:
   prowlarr:
-    image: linuxserver/prowlarr:2.5.2.5491-ls156
+    image: linuxserver/prowlarr:2.5.2.5491-ls157
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
