@@ -15,16 +15,34 @@ services:
       #   published: 5055
       #   protocol: tcp
       #   mode: host
-    volumes:
-      - /mnt/cephfs/app_data/traccar/logs:/opt/traccar/logs:rw
-      - /mnt/cephfs/app_data/traccar/traccar.xml:/opt/traccar/conf/traccar.xml:ro
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        export DATABASE_PASSWORD=$$(cat /run/secrets/traccar--pg_pass)
+        export OPENID_CLIENT_SECRET=$$(cat /run/secrets/traccar--oidc_client_secret)
+        exec java -Djava.net.preferIPv4Stack=true -Xms512m -Xmx512m \
+          -jar tracker-server.jar conf/traccar.xml
+    secrets:
+      - traccar--pg_pass
+      - traccar--oidc_client_secret
+    environment:
+      CONFIG_USE_ENVIRONMENT_VARIABLES: "true"
+      DATABASE_DRIVER: org.postgresql.Driver
+      DATABASE_URL: jdbc:postgresql://db.${DOMAIN}:5000/traccar_db?sslmode=require
+      DATABASE_USER: traccar_user
+      OPENID_FORCE: "false"
+      OPENID_CLIENT_ID: ZHEgtYdjpXuY31HyxeT3NVxk7oZskXg9NhjWfrPo
+      OPENID_AUTH_URL: https://auth.${DOMAIN}/application/o/authorize/
+      OPENID_TOKEN_URL: https://auth.${DOMAIN}/application/o/token/
+      OPENID_USER_INFO_URL: https://auth.${DOMAIN}/application/o/userinfo/
+      OPENID_ALLOW_GROUP: user
+      OPENID_ADMIN_GROUP: admin
+      WEB_URL: https://traccar.${DOMAIN}
+      LOGGER_LEVEL: warning
+      LOGGER_CONSOLE: "true"
     networks:
       - proxy
-    command: >
-      -Djava.net.preferIPv4Stack=true
-      -Xms512m
-      -Xmx512m
-      -jar tracker-server.jar conf/traccar.xml
     deploy:
       replicas: 1
       restart_policy:
@@ -76,6 +94,12 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
+
+secrets:
+  traccar--pg_pass:
+    external: true
+  traccar--oidc_client_secret:
+    external: true
 
 networks:
   proxy:
