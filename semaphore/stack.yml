@@ -47,8 +47,8 @@ services:
       # - semaphore--admin_password
       - semaphore--oidc_client_id
       - semaphore--oidc_client_secret
-    volumes:
-      - /mnt/cephfs/app_data/semaphore/config:/etc/semaphore
+    # volumes:
+    #   - /mnt/cephfs/app_data/semaphore/config:/etc/semaphore
     networks:
       - proxy
     deploy:
