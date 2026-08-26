@@ -11,8 +11,10 @@ services:
       - SEMAPHORE_DB=semaphore_db
       - SEMAPHORE_DB_OPTIONS={"sslmode":"require"}
 
-      # Security
+      # Security — all three keys pinned; config volume no longer needed
       - SEMAPHORE_ACCESS_KEY_ENCRYPTION_FILE=/run/secrets/semaphore--access_key
+      - SEMAPHORE_COOKIE_HASH_FILE=/run/secrets/semaphore--cookie_hash
+      - SEMAPHORE_COOKIE_ENCRYPTION_FILE=/run/secrets/semaphore--cookie_encryption
 
       # # Initial admin user (only used on first run)
       # - SEMAPHORE_ADMIN=admin
@@ -44,11 +46,11 @@ services:
     secrets:
       - semaphore--db_pass
       - semaphore--access_key
+      - semaphore--cookie_hash
+      - semaphore--cookie_encryption
       # - semaphore--admin_password
       - semaphore--oidc_client_id
       - semaphore--oidc_client_secret
-    # volumes:
-    #   - /mnt/cephfs/app_data/semaphore/config:/etc/semaphore
     networks:
       - proxy
     deploy:
@@ -84,6 +86,10 @@ secrets:
   semaphore--db_pass:
     external: true
   semaphore--access_key:
+    external: true
+  semaphore--cookie_hash:
+    external: true
+  semaphore--cookie_encryption:
     external: true
   # semaphore--admin_password:
   #   external: true
