@@ -17,10 +17,10 @@ services:
       - SEMAPHORE_COOKIE_ENCRYPTION_FILE=/run/secrets/semaphore--cookie_encryption
 
       # # Initial admin user (only used on first run)
-      # - SEMAPHORE_ADMIN=admin
-      # - SEMAPHORE_ADMIN_NAME=Admin
-      # - SEMAPHORE_ADMIN_EMAIL=admin@${DOMAIN}
-      # - SEMAPHORE_ADMIN_PASSWORD_FILE=/run/secrets/semaphore--admin_password
+      - SEMAPHORE_ADMIN=admin
+      - SEMAPHORE_ADMIN_NAME=Admin
+      - SEMAPHORE_ADMIN_EMAIL=admin@${DOMAIN}
+      - SEMAPHORE_ADMIN_PASSWORD_FILE=/run/secrets/semaphore--admin_password
 
       # General
       - SEMAPHORE_WEB_ROOT=https://semaphore.${DOMAIN}
@@ -48,7 +48,7 @@ services:
       - semaphore--access_key
       - semaphore--cookie_hash
       - semaphore--cookie_encryption
-      # - semaphore--admin_password
+      - semaphore--admin_password
       - semaphore--oidc_client_id
       - semaphore--oidc_client_secret
     networks:
@@ -91,8 +91,8 @@ secrets:
     external: true
   semaphore--cookie_encryption:
     external: true
-  # semaphore--admin_password:
-  #   external: true
+  semaphore--admin_password:
+    external: true
   semaphore--oidc_client_id:
     external: true
   semaphore--oidc_client_secret:
