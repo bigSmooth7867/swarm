@@ -6,6 +6,24 @@ services:
       - PGID=${PGID}
       - TZ=Etc/UTC
       - UMASK=002
+      - PROWLARR__SERVER__PORT=9696
+      - PROWLARR__POSTGRES__HOST=db.${DOMAIN}
+      - PROWLARR__POSTGRES__PORT=5000
+      - PROWLARR__POSTGRES__USER=prowlarr_user
+      - PROWLARR__POSTGRES__MAINDB=prowlarr-main
+      - PROWLARR__POSTGRES__LOGDB=prowlarr-log
+      - FILE__PROWLARR__POSTGRES__PASSWORD=/run/secrets/prowlarr--pg_pass
+      # Pin the API key so the *arr app syncs survive cache wipes
+      - FILE__PROWLARR__AUTH__APIKEY=/run/secrets/prowlarr--api_key
+      # Preserve current auth/behavior settings (matches existing config.xml)
+      - PROWLARR__AUTH__METHOD=Forms
+      - PROWLARR__AUTH__REQUIRED=DisabledForLocalAddresses
+      - PROWLARR__LOG__ANALYTICSENABLED=False
+      - PROWLARR__LOG__LEVEL=info
+      - PROWLARR__APP__INSTANCENAME=Prowlarr
+    secrets:
+      - prowlarr--pg_pass
+      - prowlarr--api_key
     volumes:
       - /mnt/cephfs/app_data/prowlarr/data:/config
     # ports:
@@ -336,6 +354,10 @@ volumes:
       device: ":/mnt/tank/media/data/usenet"
 
 secrets:
+  prowlarr--pg_pass:
+    external: true
+  prowlarr--api_key:
+    external: true
   profilarr--api_key:
     external: true
   profilarr--oidc_client_secret:
