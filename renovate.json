@@ -216,6 +216,13 @@
       "prBodyNotes": ["[Release notes](https://github.com/nextcloud/server/releases)"]
     },
     {
+      "description": "Netbox - add sourceUrl for changelog links",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["netbox"],
+      "sourceUrl": "https://github.com/netbox-community/netbox-docker",
+      "prBodyNotes": ["[Release notes](https://github.com/netbox-community/netbox-docker/releases)"]
+    },
+    {
       "description": "pgAdmin4 - add sourceUrl for changelog links",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["dpage/pgadmin4"],
