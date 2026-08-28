@@ -33,7 +33,7 @@ services:
       - GITEA__storage__MINIO_BUCKET=gitea
       - GITEA__storage__MINIO_LOCATION=us-east-1
       - GITEA__storage__MINIO_BUCKET_LOOKUP=path
-      - SSH_LOG_LEVEL=ERROR
+      # - SSH_LOG_LEVEL=ERROR
     volumes:
       - /mnt/cephfs/app_data/gitea/data:/data
       - /etc/localtime:/etc/localtime:ro
@@ -43,16 +43,16 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    ports:
-      - target: 22
-        published: 2221
-        protocol: tcp
-        mode: ingress
     # ports:
     #   - target: 22
     #     published: 2221
     #     protocol: tcp
-    #     mode: host
+    #     mode: ingress
+    ports:
+      - target: 22
+        published: 2221
+        protocol: tcp
+        mode: host
     networks:
       - internal
       - proxy
