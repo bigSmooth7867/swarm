@@ -223,6 +223,15 @@
       "prBodyNotes": ["[Release notes](https://github.com/pgadmin-org/pgadmin4/releases)"]
     },
     {
+      "description": "Traccar - release notes are published on the blog, not in GitHub releases; blog posts are per minor version (6.13.1 lives under traccar-6-13)",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["traccar/traccar"],
+      "sourceUrl": "https://github.com/traccar/traccar",
+      "prBodyNotes": [
+        "[Release notes](https://www.traccar.org/blog/traccar-{{{newMajor}}}-{{{newMinor}}}/) · [All releases](https://www.traccar.org/blog/category/releases/)"
+      ]
+    },
+    {
       "description": "vaultls - add sourceUrl for changelog links",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["ghcr.io/7ritn/vaultls"],
