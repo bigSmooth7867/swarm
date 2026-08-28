@@ -133,7 +133,7 @@ services:
       - FILE__SONARR__AUTH__APIKEY=/run/secrets/sonarr--api_key
       # Preserve current auth/behavior settings (Sonarr uses Basic/Enabled,
       # unlike Radarr's Forms — matches its existing config.xml)
-      - SONARR__LOG__LEVEL=info
+      - SONARR__LOG__LEVEL=Warn
       - SONARR__AUTH__METHOD=Basic
       - SONARR__AUTH__REQUIRED=Enabled
       - SONARR__LOG__ANALYTICSENABLED=False
