@@ -219,8 +219,7 @@
       "description": "Netbox - add sourceUrl for changelog links",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["netbox"],
-      "sourceUrl": "https://github.com/netbox-community/netbox-docker",
-      "prBodyNotes": ["[Release notes](https://github.com/netbox-community/netbox-docker/releases)"]
+      "sourceUrl": "https://github.com/netbox-community/netbox-docker"
     },
     {
       "description": "pgAdmin4 - add sourceUrl for changelog links",
