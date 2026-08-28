@@ -149,7 +149,7 @@ services:
         condition: any
 
   loki:
-    image: grafana/loki:3.7.6
+    image: grafana/loki:3.7.7
     entrypoint:
       - /bin/sh
       - -c
