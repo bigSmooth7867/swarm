@@ -40,6 +40,10 @@ x-netbox-common: &netbox-common
     SOCIAL_AUTH_OIDC_SCOPE: "openid profile email roles"
     LOGOUT_REDIRECT_URL: "https://auth.${DOMAIN}/application/o/netbox/end-session/"
 
+    # --- Logging ---
+    LOGLEVEL: "WARNING"
+    GUNICORN_CMD_ARGS: "--log-level=warning --access-logfile=/dev/null"
+
   secrets:
     - source: netbox--secret_key
       target: secret_key
@@ -66,7 +70,7 @@ x-netbox-common: &netbox-common
     - /mnt/cephfs/app_data/netbox/config/authentik.py:/etc/netbox/config/authentik.py:ro
     - /mnt/cephfs/app_data/netbox/config/s3.py:/etc/netbox/config/s3.py:ro
     - /mnt/cephfs/app_data/netbox/config/custom_pipeline.py:/opt/netbox/netbox/netbox/custom_pipeline.py:ro
-
+    - /mnt/cephfs/app_data/netbox/config/logging.py:/etc/netbox/config/logging.py:ro
 services:
   netbox:
     <<: *netbox-common
