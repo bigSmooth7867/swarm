@@ -74,7 +74,7 @@ services:
       - FILE__RADARR__AUTH__APIKEY=/run/secrets/radarr--api_key
       # Preserve auth/behavior settings from the old config.xml so a fresh
       # cache volume doesn't reset them to first-run defaults
-      - RADARR__LOG__LEVEL=info
+      - RADARR__LOG__LEVEL=Warn
       - RADARR__AUTH__METHOD=Forms
       - RADARR__AUTH__REQUIRED=DisabledForLocalAddresses
       - RADARR__LOG__ANALYTICSENABLED=False
