@@ -19,7 +19,7 @@ services:
       - PROWLARR__AUTH__METHOD=Forms
       - PROWLARR__AUTH__REQUIRED=DisabledForLocalAddresses
       - PROWLARR__LOG__ANALYTICSENABLED=False
-      - PROWLARR__LOG__LEVEL=info
+      - PROWLARR__LOG__LEVEL=Warn
       - PROWLARR__APP__INSTANCENAME=Prowlarr
     secrets:
       - prowlarr--pg_pass
