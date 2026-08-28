@@ -42,7 +42,7 @@ services:
       - GF_DATABASE_PASSWORD__FILE=/run/secrets/grafana--pg_pass
       - GF_DATABASE_SSL_MODE=require
 
-      - GF_PROVISIONING_ALLOWED_GIT_URLS=git.${DOMAIN}
+      - GF_PROVISIONING_ALLOWED_GIT_URLS=gitea.${DOMAIN}
     volumes:
       - /mnt/cephfs/app_data/grafana:/var/lib/grafana
     networks:
