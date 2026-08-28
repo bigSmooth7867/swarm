@@ -1,6 +1,6 @@
 services:
   grampsweb:
-    image: ghcr.io/gramps-project/grampsweb:26.8.0
+    image: ghcr.io/gramps-project/grampsweb:26.8.1
     entrypoint: /bin/bash
     command:
       - -c
@@ -98,7 +98,7 @@ services:
         max-file: "3"
 
   grampsweb_celery:
-    image: ghcr.io/gramps-project/grampsweb:26.8.0
+    image: ghcr.io/gramps-project/grampsweb:26.8.1
     entrypoint: /bin/bash
     command:
       - -c
