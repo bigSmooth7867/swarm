@@ -42,8 +42,8 @@ x-netbox-common: &netbox-common
 
     # --- Logging ---
     LOGLEVEL: "WARNING"
-    GUNICORN_CMD_ARGS: "--log-level=warning --access-logfile=/dev/null"
-
+    GRANIAN_EXTRA_ARGS: "--no-access-log"
+    
   secrets:
     - source: netbox--secret_key
       target: secret_key
