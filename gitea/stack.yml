@@ -43,16 +43,16 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    # ports:
-    #   - target: 22
-    #     published: 2221
-    #     protocol: tcp
-    #     mode: ingress
     ports:
       - target: 22
         published: 2221
         protocol: tcp
-        mode: host
+        mode: ingress
+    # ports:
+    #   - target: 22
+    #     published: 2221
+    #     protocol: tcp
+    #     mode: host
     networks:
       - internal
       - proxy
