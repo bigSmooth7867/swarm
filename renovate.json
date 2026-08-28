@@ -169,9 +169,9 @@
     {
       "description": "iGotify Notification Assist - add sourceUrl for changelog links",
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["ghcr.io/androidseb25/igotify-notification-assist"],
-      "sourceUrl": "https://github.com/androidseb25/iGotify-Notification-Assist",
-      "prBodyNotes": ["[Release notes](https://github.com/androidseb25/iGotify-Notification-Assist/releases)"]
+      "matchPackageNames": ["ghcr.io/androidseb25/iGotify-Notification-Assistent"],
+      "sourceUrl": "https://github.com/androidseb25/iGotify-Notification-Assistent",
+      "prBodyNotes": ["[Release notes](https://github.com/androidseb25/iGotify-Notification-Assistent/releases)"]
     },
     {
       "description": "Immich Drop - add sourceUrl for changelog links",
