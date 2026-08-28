@@ -135,7 +135,6 @@ services:
   #       max-size: "50m"
   #       max-file: "5"
 
-
   runner-new:
     image: gitea/runner:3.1.0
     hostname: "runner-{{.Node.Hostname}}-{{.Task.Slot}}"
