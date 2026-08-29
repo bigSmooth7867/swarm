@@ -1,6 +1,6 @@
 services:
   server:
-    image: gitea/gitea:1.27.2
+    image: gitea/gitea:1.27.3
     secrets:
       - gitea--pg_db
       - gitea--pg_user
