@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/we-promise/sure:0.7.3
+    image: ghcr.io/we-promise/sure:0.7.4
     entrypoint:
       - "/bin/sh"
       - "-c"
@@ -131,7 +131,7 @@ services:
         - "homepage.href=https://sure.${DOMAIN}"
 
   worker:
-    image: ghcr.io/we-promise/sure:0.7.3
+    image: ghcr.io/we-promise/sure:0.7.4
     entrypoint:
       - "/bin/sh"
       - "-c"
