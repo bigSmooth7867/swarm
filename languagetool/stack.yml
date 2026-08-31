@@ -2,7 +2,7 @@ services:
   languagetool:
     image: erikvl87/languagetool:6.8
     volumes:
-      # - /mnt/cephfs/app_data/languagetool/logback/logback.xml:/LanguageTool/logback.xml:ro
+      - /mnt/cephfs/app_data/languagetool/logback/logback.xml:/LanguageTool/logback.xml:ro
       - ngrams_data:/ngrams:ro
     environment:
       - langtool_languageModel=/ngrams
@@ -45,9 +45,9 @@ networks:
   proxy:
     external: true
 
-configs:
-  logback:
-    file: ./logback.xml
+# configs:
+#   logback:
+#     file: ./logback.xml
 
 volumes:
   ngrams_data:
