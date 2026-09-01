@@ -1,0 +1,137 @@
+services:
+  server:
+    image: codeberg.org/forgejo/forgejo:16.0.3
+    secrets:
+      - forgejo--pg_db
+      - forgejo--pg_user
+      - forgejo--pg_pass
+      - forgejo--minio_access_key
+      - forgejo--minio_secret_key
+    environment:
+      - USER_UID=${PUID}
+      - USER_GID=${PGID}
+      # Rootful image entrypoint vars: SSH_PORT is what shows in clone URLs,
+      # SSH_LISTEN_PORT is what sshd binds inside the container.
+      - SSH_PORT=2222
+      - SSH_LISTEN_PORT=22
+      # --- server -----------------------------------------------------------
+      # Needed to skip the web installer since there is no pre-existing app.ini.
+      - FORGEJO__security__INSTALL_LOCK=true
+      - FORGEJO__server__DOMAIN=forgejo.${DOMAIN}
+      - FORGEJO__server__SSH_DOMAIN=forgejo.${DOMAIN}
+      - FORGEJO__server__ROOT_URL=https://forgejo.${DOMAIN}/
+      # --- database ---------------------------------------------------------
+      - FORGEJO__database__DB_TYPE=postgres
+      - FORGEJO__database__HOST=db.${DOMAIN}:5000
+      - FORGEJO__database__SSL_MODE=require
+      - FORGEJO__database__NAME__FILE=/run/secrets/forgejo--pg_db
+      - FORGEJO__database__USER__FILE=/run/secrets/forgejo--pg_user
+      - FORGEJO__database__PASSWD__FILE=/run/secrets/forgejo--pg_pass
+      # --- misc -------------------------------------------------------------
+      - FORGEJO__log__LEVEL=Warn
+      - FORGEJO__indexer__ISSUE_INDEXER_TYPE=db
+      # --- storage (Garage / S3) -------------------------------------------
+      # Same layout as Gitea: one bucket, per-type prefixes. Use a separate
+      # bucket so the two instances never share objects.
+      - FORGEJO__storage__STORAGE_TYPE=minio
+      - FORGEJO__storage__MINIO_ENDPOINT=s3.${DOMAIN}
+      - FORGEJO__storage__MINIO_USE_SSL=true
+      - FORGEJO__storage__MINIO_ACCESS_KEY_ID__FILE=/run/secrets/forgejo--minio_access_key
+      - FORGEJO__storage__MINIO_SECRET_ACCESS_KEY__FILE=/run/secrets/forgejo--minio_secret_key
+      - FORGEJO__storage__MINIO_BUCKET=forgejo
+      - FORGEJO__storage__MINIO_LOCATION=us-east-1
+      - FORGEJO__storage__MINIO_BUCKET_LOOKUP=path
+      # --- OIDC (Authentik) -------------------------------------------------
+      # The auth *source* itself (client id/secret, discovery URL) is not an
+      # app.ini setting; add it once with `forgejo admin auth add-oauth`
+      # (see notes). These settings govern how OIDC logins are handled.
+      - FORGEJO__oauth2_client__ENABLE_AUTO_REGISTRATION=true
+      - FORGEJO__oauth2_client__USERNAME=preferred_username
+      - FORGEJO__oauth2_client__ACCOUNT_LINKING=auto
+      - FORGEJO__oauth2_client__UPDATE_AVATAR=true
+      - FORGEJO__oauth2_client__REGISTER_EMAIL_CONFIRM=false
+      # Registration only via the external provider; hide the signup button.
+      - FORGEJO__service__DISABLE_REGISTRATION=false
+      - FORGEJO__service__ALLOW_ONLY_EXTERNAL_REGISTRATION=true
+      - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
+      - FORGEJO__service__REQUIRE_SIGNIN_VIEW=false
+      # Once you've confirmed OIDC login works and the bot account has a PAT,
+      # flip this to hide the local username/password form entirely. Keep a
+      # local admin around for break-glass access either way.
+      # - FORGEJO__service__ENABLE_INTERNAL_SIGNIN=false
+    volumes:
+      - /mnt/cephfs/app_data/forgejo/data:/data
+      - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:3000/api/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    ports:
+      - target: 22
+        published: 2222
+        protocol: tcp
+        mode: ingress
+    networks:
+      - internal
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      labels:
+        # TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.forgejo.entrypoints=http"
+        - "traefik.http.routers.forgejo.rule=Host(`forgejo.${DOMAIN}`)"
+        - "traefik.http.middlewares.forgejo-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.forgejo.middlewares=forgejo-https-redirect"
+        - "traefik.http.routers.forgejo-secure.entrypoints=https"
+        - "traefik.http.routers.forgejo-secure.rule=Host(`forgejo.${DOMAIN}`)"
+        - "traefik.http.routers.forgejo-secure.tls=true"
+        - "traefik.http.routers.forgejo-secure.service=forgejo"
+        - "traefik.http.services.forgejo.loadbalancer.server.port=3000"
+        - "traefik.swarm.network=proxy"
+        # HOMEPAGE
+        - "homepage.group=Administration"
+        - "homepage.name=forgejo"
+        - "homepage.icon=forgejo.png"
+        - "homepage.href=https://forgejo.${DOMAIN}/user/login"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+secrets:
+  forgejo--pg_db:
+    external: true
+  forgejo--pg_user:
+    external: true
+  forgejo--pg_pass:
+    external: true
+  forgejo--minio_access_key:
+    external: true
+  forgejo--minio_secret_key:
+    external: true
+
+networks:
+  internal:
+    driver: overlay
+  proxy:
+    external: true
