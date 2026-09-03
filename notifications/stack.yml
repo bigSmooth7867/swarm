@@ -1,6 +1,6 @@
 services:
   apprise-api:
-    image: caronc/apprise:v1.5.2
+    image: caronc/apprise:v1.5.3
     environment:
       # - PUID=${PUID}
       # - PGID=${PGID}
