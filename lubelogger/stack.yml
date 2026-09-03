@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/hargata/lubelogger:v1.7.1
+    image: ghcr.io/hargata/lubelogger:v1.7.2
     # environment:
     #   EnableAuth: "true"
     #   EnableRootUserOIDC: "true"
