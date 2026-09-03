@@ -1,6 +1,6 @@
 services:
   filebrowser:
-    image: gtstef/filebrowser:1.5.3-stable
+    image: gtstef/filebrowser:1.5.5-stable
     # Optionally run as non-root filebrowser user
     #user: filebrowser
     healthcheck:
