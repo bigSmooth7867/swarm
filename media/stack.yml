@@ -266,7 +266,7 @@ services:
         - "homepage.href=https://sabnzbd.${DOMAIN}"
 
   iSponsorBlockTV:
-      image: ghcr.io/dmunozv04/isponsorblocktv:v2.10.0
+      image: ghcr.io/dmunozv04/isponsorblocktv:v2.11.0
       volumes:
         - /mnt/cephfs/app_data/isponsorblocktv:/app/data
       networks:
