@@ -261,7 +261,7 @@ services:
   # Immich Kiosk
   # ============================================================
   immich-kiosk:
-    image: ghcr.io/damongolding/immich-kiosk:0.42.0
+    image: ghcr.io/damongolding/immich-kiosk:0.43.1
     tty: true
     volumes:
       - /mnt/cephfs/app_data/immich-kiosk/config.yaml:/config.yaml
