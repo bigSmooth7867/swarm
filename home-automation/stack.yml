@@ -165,7 +165,7 @@ services:
         - "dnsweaver.hostname=esphome.${DOMAIN}"
 
   zigbee2mqtt:
-    image: koenkk/zigbee2mqtt:2.13.0
+    image: koenkk/zigbee2mqtt:2.14.1
     user: "${PUID}:${PGID}"
     environment:
       - TZ=${TZ}
