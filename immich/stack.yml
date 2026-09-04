@@ -104,7 +104,7 @@ services:
   # ============================================================
   # No native _FILE support — uses inline secret export
   immich-power-tools:
-    image: ghcr.io/immich-power-tools/immich-power-tools:v0.22.0
+    image: ghcr.io/immich-power-tools/immich-power-tools:v0.23.0
     entrypoint: /bin/sh
     command:
       - -c
