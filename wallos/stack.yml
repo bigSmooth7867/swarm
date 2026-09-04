@@ -1,6 +1,6 @@
 services:
   wallos:
-    image: bellamy/wallos:5.4.5
+    image: bellamy/wallos:5.5.0
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/health.php"]
       interval: 5m
