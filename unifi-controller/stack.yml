@@ -1,6 +1,6 @@
 services:
   unifi-network-application:
-    image: linuxserver/unifi-network-application:10.5.67-ls141
+    image: linuxserver/unifi-network-application:10.6.101-ls144
     environment:
       - PUID=1000
       - PGID=1000
