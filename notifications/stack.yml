@@ -71,7 +71,7 @@ services:
         - "traefik.tcp.services.mailrise.loadbalancer.server.port=8025" # don't think i need it
         - "traefik.swarm.network=proxy"
         # # DNSWEAVER
-        # - "dnsweaver.hostname=maps.${DOMAIN}"
+        # - "dnsweaver.hostname=mailserver.${DOMAIN}"
 
   gotify:
     image: gotify/server:2.9.1
