@@ -6,7 +6,7 @@ services:
       - DNSWEAVER_DOCKER_HOST=tcp://dockerproxy:2375
       - DNSWEAVER_INSTANCES=internal
       - DNSWEAVER_INTERNAL_TYPE=technitium
-      - DNSWEAVER_INTERNAL_URL=http://192.168.50.25:53443
+      - DNSWEAVER_INTERNAL_URL=https://192.168.50.25:53443
       - DNSWEAVER_INTERNAL_TOKEN_FILE=/run/secrets/dnsweaver--technitium_token
       - DNSWEAVER_INTERNAL_ZONE=${DOMAIN}
       - DNSWEAVER_INTERNAL_RECORD_TYPE=A
