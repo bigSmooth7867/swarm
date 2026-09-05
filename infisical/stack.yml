@@ -31,6 +31,8 @@ services:
         - "traefik.http.services.infisical.loadbalancer.server.port=8080"
         # Network 
         - "traefik.swarm.network=proxy"
+        # DNSWEAVER
+        - "dnsweaver.hostname=infisical.${DOMAIN}"
 
   redis:
     image: redis:7.4-alpine

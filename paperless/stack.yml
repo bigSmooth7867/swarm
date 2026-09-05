@@ -96,6 +96,9 @@ services:
         - homepage.name=paperless
         - homepage.icon=paperless.png
         - homepage.href=https://paperless.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=paperless.${DOMAIN}"
+
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000 || exit 1"]
       interval: 30s

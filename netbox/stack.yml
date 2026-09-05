@@ -121,6 +121,8 @@ services:
         - "homepage.name=NetBox"
         - "homepage.icon=netbox.png"
         - "homepage.href=https://netbox.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=netbox.${DOMAIN}"
 
   netbox-worker:
     <<: *netbox-common

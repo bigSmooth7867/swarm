@@ -26,6 +26,8 @@ services:
         - "traefik.http.routers.dav-secure.service=dav"
         - "traefik.http.services.dav.loadbalancer.server.port=5232"
         - "traefik.swarm.network=proxy"
+        # DNSWEAVER
+        - "dnsweaver.hostname=dav.${DOMAIN}"
 
 networks:
   proxy:

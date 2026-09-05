@@ -29,6 +29,8 @@ services:
         - "homepage.name=kiwix"
         - "homepage.icon=kiwix.png"
         - "homepage.href=https://kiwix.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=kiwix.${DOMAIN}"
 
 networks:
   proxy:

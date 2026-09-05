@@ -46,6 +46,8 @@ services:
         - homepage.name=vaultls
         - homepage.icon=sh-vaultls.png
         - homepage.href=https://vaultls.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=vaultls.${DOMAIN}"
 
 networks:
   proxy:

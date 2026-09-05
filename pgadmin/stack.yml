@@ -41,6 +41,9 @@ services:
         - homepage.name=pgadmin
         - homepage.icon=pgadmin.png
         - homepage.href=https://pgadmin.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=pgadmin.${DOMAIN}"
+
     logging:
       options:
         max-size: "10m"

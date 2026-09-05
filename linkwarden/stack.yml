@@ -85,6 +85,9 @@ services:
         - "homepage.name=linkwarden"
         - "homepage.icon=linkwarden.png"
         - "homepage.href=https://linkwarden.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=linkwarden.${DOMAIN}"
+
     logging:
       options:
         max-size: "10m"

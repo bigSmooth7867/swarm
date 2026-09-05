@@ -53,6 +53,8 @@ services:
         - "homepage.name=prowlarr"
         - "homepage.icon=prowlarr.png"
         - "homepage.href=https://prowlarr.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=prowlarr.${DOMAIN}"
 
   radarr:
     image: linuxserver/radarr:6.3.0.10514-ls314
@@ -112,6 +114,8 @@ services:
         - homepage.name=radarr
         - homepage.icon=radarr.png
         - homepage.href=https://radarr.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=radarr.${DOMAIN}"
 
   sonarr:
     image: linuxserver/sonarr:4.0.19.2979-ls323
@@ -171,6 +175,8 @@ services:
         - "homepage.name=sonarr"
         - "homepage.icon=sonarr.png"
         - "homepage.href=https://sonarr.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=sonarr.${DOMAIN}"
 
   profilarr:
     image: ghcr.io/dictionarry-hub/profilarr:2.2.0
@@ -223,6 +229,8 @@ services:
         - "homepage.name=profilarr"
         - "homepage.icon=profilarr.png"
         - "homepage.href=https://profilarr.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=profilarr.${DOMAIN}"
 
   sabnzbd:
     image: linuxserver/sabnzbd:5.1.2-ls269
@@ -264,6 +272,8 @@ services:
         - "homepage.name=sabnzbd"
         - "homepage.icon=sabnzbd.png"
         - "homepage.href=https://sabnzbd.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=sabnzbd.${DOMAIN}"
 
   iSponsorBlockTV:
       image: ghcr.io/dmunozv04/isponsorblocktv:v2.11.0

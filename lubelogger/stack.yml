@@ -40,6 +40,9 @@ services:
         - "homepage.name=lubelogger"
         - "homepage.icon=lubelogger.png"
         - "homepage.href=https://cars.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=cars.${DOMAIN}"
+
 
 networks:
   proxy:

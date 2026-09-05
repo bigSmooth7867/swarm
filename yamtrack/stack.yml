@@ -66,6 +66,9 @@ services:
         - "homepage.name=yamtrack"
         - "homepage.icon=yamtrack.png"
         - "homepage.href=https://watchlist.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=watchlist.${DOMAIN}"
+
     logging:
       driver: "json-file"
       options:

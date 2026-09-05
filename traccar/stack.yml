@@ -83,6 +83,9 @@ services:
         - homepage.name=traccar
         - homepage.icon=traccar.png
         - homepage.href=https://traccar.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=traccar.${DOMAIN}"
+
     # healthcheck:
     #   test: ["CMD-SHELL", "curl -sf http://localhost:8082/api/server || exit 1"]
     #   interval: 30s

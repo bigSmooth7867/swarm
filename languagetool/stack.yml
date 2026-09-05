@@ -40,6 +40,8 @@ services:
         - "traefik.http.routers.langtools-secure.service=langtools"
         - "traefik.http.services.langtools.loadbalancer.server.port=8010"
         - "traefik.swarm.network=proxy"
+        # DNSWEAVER
+        - "dnsweaver.hostname=langtools.${DOMAIN}"
 
 networks:
   proxy:

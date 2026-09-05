@@ -80,6 +80,8 @@ services:
         - "homepage.name=Semaphore"
         - "homepage.icon=semaphore.png"
         - "homepage.href=https://semaphore.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=semaphore.${DOMAIN}"
 
 
 secrets:

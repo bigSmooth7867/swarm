@@ -38,6 +38,9 @@ services:
         - "homepage.name=meshcentral"
         - "homepage.icon=meshcentral.png"
         - "homepage.href=https://meshcentral.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=meshcentral.${DOMAIN}"
+
 networks:
   proxy:
     external: true

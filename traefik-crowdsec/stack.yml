@@ -92,6 +92,7 @@ services:
         - "homepage.name=traefik"
         - "homepage.icon=traefik.png"
         - "homepage.href=https://traefik-dashboard.${DOMAIN}"
+
     healthcheck:
       test: ["CMD", "traefik", "healthcheck"]
       interval: 10s

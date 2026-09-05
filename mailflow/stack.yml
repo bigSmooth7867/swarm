@@ -39,6 +39,8 @@ services:
         - "homepage.name=mailflow"
         - "homepage.icon=mailflow.png"
         - "homepage.href=https://mailflow.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=mailflow.${DOMAIN}"
 
   backend:
     image: ghcr.io/maathimself/mailflow-backend:3.1.4

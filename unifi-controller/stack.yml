@@ -85,6 +85,9 @@ services:
         - "homepage.name=unifi"
         - "homepage.icon=unifi.png"
         - "homepage.href=https://unifi.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=unifi.${DOMAIN}"
+
     logging:
       driver: json-file
       options:

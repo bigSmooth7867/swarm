@@ -70,6 +70,8 @@ services:
         - "homepage.name=litellm"
         - "homepage.icon=litellm.png"
         - "homepage.href=https://litellm.${DOMAIN}/ui"
+        # DNSWEAVER
+        - "dnsweaver.hostname=litellm.${DOMAIN}"
 
   presidio-analyzer:
     image: mcr.microsoft.com/presidio-analyzer:2.2.362

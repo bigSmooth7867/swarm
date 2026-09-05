@@ -146,6 +146,8 @@ services:
         - "homepage.name=open-webui"
         - "homepage.icon=open-webui.png"
         - "homepage.href=https://open-webui.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=open-webui.${DOMAIN}"
 
 secrets:
   OAUTH_CLIENT_SECRET:

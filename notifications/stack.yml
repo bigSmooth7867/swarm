@@ -43,6 +43,8 @@ services:
         - homepage.name=apprise
         - homepage.icon=apprise.png
         - homepage.href=https://apprise.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=apprise.${DOMAIN}"
 
 
   mailrise:
@@ -68,6 +70,8 @@ services:
         - "traefik.tcp.routers.mailrise.entrypoints=mailsecure"
         - "traefik.tcp.services.mailrise.loadbalancer.server.port=8025" # don't think i need it
         - "traefik.swarm.network=proxy"
+        # # DNSWEAVER
+        # - "dnsweaver.hostname=maps.${DOMAIN}"
 
   gotify:
     image: gotify/server:2.9.1
@@ -101,6 +105,8 @@ services:
         - homepage.name=gotify
         - homepage.icon=gotify.png
         - homepage.href=https://gotify.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=gotify.${DOMAIN}"
 
 
   igotify:
@@ -136,6 +142,8 @@ services:
         - "traefik.http.services.igotify.loadbalancer.server.port=8080"
 #      - "traefik.http.routers.igotify-secure.middlewares=middlewares-authentik@file" #add this to any container you want to use the Authentik web proxy
         - "traefik.swarm.network=proxy"
+        # DNSWEAVER
+        - "dnsweaver.hostname=igotify.${DOMAIN}"
 
 
   bark-server:
@@ -166,6 +174,8 @@ services:
         - "traefik.http.routers.bark-secure.service=bark"
         - "traefik.http.services.bark.loadbalancer.server.port=8080" 
         - "traefik.swarm.network=proxy"
+        # DNSWEAVER
+        - "dnsweaver.hostname=bark.${DOMAIN}"
 
 networks:
   proxy:
