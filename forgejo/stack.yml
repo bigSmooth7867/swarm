@@ -112,6 +112,9 @@ services:
         - "homepage.name=forgejo"
         - "homepage.icon=forgejo.png"
         - "homepage.href=https://forgejo.${DOMAIN}/user/login"
+        # DNSWEAVER
+        - "dnsweaver.hostname=forgejo.${DOMAIN}"
+
     logging:
       driver: json-file
       options:

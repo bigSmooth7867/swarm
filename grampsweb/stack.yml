@@ -92,6 +92,9 @@ services:
         - homepage.name=gramps-web
         - homepage.icon=gramps-web.png
         - homepage.href=https://genea.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=genea.${DOMAIN}"
+
     logging:
       options:
         max-size: "10m"

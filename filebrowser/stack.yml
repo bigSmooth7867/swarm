@@ -46,6 +46,8 @@ services:
         - homepage.name=filebrowser
         - homepage.icon=filebrowser.png
         - homepage.href=https://filebrowser.${DOMAIN}
+        # DNSWEAVER
+        - "dnsweaver.hostname=filebrowser.${DOMAIN}"
 
 volumes:
   to_print:

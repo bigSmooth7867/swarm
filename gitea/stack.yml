@@ -92,6 +92,9 @@ services:
         - "homepage.name=gitea"
         - "homepage.icon=gitea.png"
         - "homepage.href=https://gitea.${DOMAIN}/user/login"
+        # DNSWEAVER
+        - "dnsweaver.hostname=gitea.${DOMAIN}"
+
     logging:
       driver: json-file
       options:

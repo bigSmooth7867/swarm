@@ -47,6 +47,8 @@ services:
         - "homepage.name=audiobookshelf"
         - "homepage.icon=audiobookshelf.png"
         - "homepage.href=https://audiobooks.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=audiobooks.${DOMAIN}"
 
 volumes:
   audiobooks:

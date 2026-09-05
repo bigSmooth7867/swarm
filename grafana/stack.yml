@@ -85,6 +85,9 @@ services:
         - "homepage.name=grafana"
         - "homepage.icon=grafana.png"
         - "homepage.href=https://grafana.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=grafana.${DOMAIN}"
+
     logging:
       driver: json-file
       options:
