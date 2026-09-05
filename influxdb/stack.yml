@@ -94,7 +94,7 @@ services:
         - "homepage.icon=influxdb.png"
         - "homepage.href=https://influxdbui.${DOMAIN}"
         # DNSWEAVER
-        - "dnsweaver.hostname=maps.${DOMAIN}"
+        - "dnsweaver.hostname=influxdbui.${DOMAIN}"
 
 networks:
   proxy:
