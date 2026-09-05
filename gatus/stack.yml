@@ -48,6 +48,9 @@ services:
         - "homepage.name=gatus"
         - "homepage.icon=gatus.png"
         - "homepage.href=https://status.${DOMAIN}"
+        # DNSWEAVER
+        - "dnsweaver.hostname=status.${DOMAIN}"
+
     logging:
       driver: json-file
       options:
