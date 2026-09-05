@@ -48,6 +48,9 @@ services:
         - "traefik.http.routers.donut-secure.service=donut"
         - "traefik.http.services.donut.loadbalancer.server.port=3929"
         - "traefik.swarm.network=proxy"
+        # DNSWEAVER
+        - "dnsweaver.hostname=donut.${DOMAIN}"
+
 networks:
   proxy:
     external: true
