@@ -7,7 +7,7 @@ services:
     #   - POSTGRES_USER=${PG_USER}
     #   - POSTGRES_PASSWORD=${PG_PASS}
     #   - POSTGRES_DB=${PG_DB}
-      - GATUS_LOG_LEVEL=WARN
+      - GATUS_LOG_LEVEL=Info #WARN
     volumes:
       - /mnt/cephfs/app_data/gatus/config/config.yml:/config/config.yml:ro
     networks:
