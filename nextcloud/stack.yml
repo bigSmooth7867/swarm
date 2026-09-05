@@ -62,7 +62,7 @@ services:
         - "homepage.icon=nextcloud.png"
         - "homepage.href=https://nextcloud.${DOMAIN}"
         # DNSWEAVER
-        - "dnsweaver.hostname=maps.${DOMAIN}"
+        - "dnsweaver.hostname=nextcloud.${DOMAIN}"
 
     logging:
       driver: json-file
