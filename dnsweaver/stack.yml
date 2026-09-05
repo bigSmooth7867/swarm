@@ -15,7 +15,7 @@ services:
       - DNSWEAVER_INTERNAL_AUTO_HTTPS_RECORDS=false
       - DNSWEAVER_INTERNAL_TTL=3600
       # - DNSWEAVER_DRY_RUN=true
-      - DNSWEAVER_LOG_LEVEL=warn
+      - DNSWEAVER_LOG_LEVEL=info #warn
     networks:
       - dockerproxynet
     secrets:
