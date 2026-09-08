@@ -43,6 +43,9 @@ services:
       rollback_config:
         parallelism: 1
         delay: 10s
+        order: stop-first
+        failure_action: pause
+        monitor: 60s
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.nextcloud.entrypoints=http"
