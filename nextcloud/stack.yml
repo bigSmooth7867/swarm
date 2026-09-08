@@ -1,6 +1,12 @@
 services:
   nextcloud:
     image: nextcloud:34.0.3-apache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/status.php | grep -q '\"installed\":true' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
     environment:
       - TZ=${TZ}
       - NEXTCLOUD_HOST=nextcloud.${DOMAIN}
@@ -32,10 +38,11 @@ services:
         parallelism: 1
         delay: 30s
         order: stop-first
+        failure_action: rollback
+        monitor: 60s
       rollback_config:
         parallelism: 1
         delay: 10s
-        failure_action: rollback
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.nextcloud.entrypoints=http"
