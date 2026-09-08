@@ -1,6 +1,6 @@
 services:
   radicale:
-    image: tomsquest/docker-radicale:3.7.6.0
+    image: tomsquest/docker-radicale:3.8.0.0
     volumes:
       - /mnt/cephfs/app_data/radicale/data:/data
       - /mnt/cephfs/app_data/radicale/config:/config
