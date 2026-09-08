@@ -1,5 +1,5 @@
 x-netbox-common: &netbox-common
-  image: netboxcommunity/netbox:v4.6.9
+  image: netboxcommunity/netbox:v4.7.0
   environment:
     # --- Database ---
     DB_HOST: "db.${DOMAIN}"
