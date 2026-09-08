@@ -1,6 +1,6 @@
 services:
   paperless-webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:3.0.5
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3
     secrets:
       - paperless--pg_user
       - paperless--pg_pass
