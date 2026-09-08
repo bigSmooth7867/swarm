@@ -138,7 +138,7 @@ services:
         max-file: "5"
 
   prometheus:
-    image: prom/prometheus:v3.13.2
+    image: prom/prometheus:v3.14.0
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--log.level=warn'
