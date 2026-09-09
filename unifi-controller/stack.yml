@@ -95,7 +95,7 @@ services:
         max-file: "5"
 
   unifi-db:
-    image: mongo:8.0.29
+    image: mongo:8.0.30
     command: ["mongod", "--quiet", "--wiredTigerEngineConfigString=verbose=[]"]
     # command: ["mongod", "--quiet"]
     environment:
