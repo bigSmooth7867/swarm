@@ -95,7 +95,7 @@ services:
         max-file: "5"
 
   renderer:
-    image: grafana/grafana-image-renderer:v5.12.2
+    image: grafana/grafana-image-renderer:v5.12.3
     # ports:
     #   - 8081
     secrets:
