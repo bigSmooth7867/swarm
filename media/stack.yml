@@ -118,7 +118,7 @@ services:
         - "dnsweaver.hostname=radarr.${DOMAIN}"
 
   sonarr:
-    image: linuxserver/sonarr:4.0.19.2979-ls323
+    image: linuxserver/sonarr:4.0.19.2979-ls324
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
