@@ -38,7 +38,7 @@ services:
           memory: 256M
 
   homeassistant:
-    image: linuxserver/homeassistant:2026.9.1-ls245
+    image: linuxserver/homeassistant:2026.9.2-ls246
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
