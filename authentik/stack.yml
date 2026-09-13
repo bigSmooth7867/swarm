@@ -33,7 +33,7 @@ services:
       AUTHENTIK_EMAIL__PORT: "465"
       AUTHENTIK_EMAIL__USERNAME: "authentik-1738"
       AUTHENTIK_EMAIL__PASSWORD: "file:///run/secrets/authentik--smtp_pass"
-      AUTHENTIK_EMAIL__USE_TLS: "dalse"
+      AUTHENTIK_EMAIL__USE_TLS: "false"
       AUTHENTIK_EMAIL__USE_SSL: "true"
       AUTHENTIK_EMAIL__TIMEOUT: "10"
       AUTHENTIK_EMAIL__FROM: "Authentik <authentik@${DOMAIN}>"
