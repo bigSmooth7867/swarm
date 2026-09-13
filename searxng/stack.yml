@@ -1,6 +1,6 @@
 services:
   searxng:
-    image: searxng/searxng:2026.9.12-87bf8c86e
+    image: searxng/searxng:2026.9.12-d4f00d15d
     user: "${PUID}:${PGID}"
     volumes:
       - /mnt/cephfs/app_data/searxng:/etc/searxng:rw
