@@ -20,13 +20,13 @@ services:
       POSTGRES_PASSWORD: file:///run/secrets/authentik--pg_pass
       # S3 media storage
       AUTHENTIK_STORAGE__BACKEND: "s3"
-      AUTHENTIK_STORAGE__S3__ENDPOINT: "https://s3.${DOMAIN}"  
-      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"                          
-      AUTHENTIK_STORAGE__S3__BUCKET_NAME: "authentik-media"        
+      AUTHENTIK_STORAGE__S3__ENDPOINT: "https://s3.${DOMAIN}"
+      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"               
+      AUTHENTIK_STORAGE__S3__BUCKET_NAME: "authentik-media"
       AUTHENTIK_STORAGE__S3__ACCESS_KEY: "file:///run/secrets/authentik--s3_access_key"
       AUTHENTIK_STORAGE__S3__SECRET_KEY: "file:///run/secrets/authentik--s3_secret_key"
       # Must be browser-reachable, include bucket name, and have NO scheme (https:// controlled by SECURE_URLS)
-      AUTHENTIK_STORAGE__S3__CUSTOM_DOMAIN: "s3.${DOMAIN}/authentik-media"  
+      AUTHENTIK_STORAGE__S3__CUSTOM_DOMAIN: "s3.${DOMAIN}/authentik-media"
       AUTHENTIK_STORAGE__S3__ADDRESSING_STYLE: "path"
     secrets:
       - authentik--pg_user
@@ -106,13 +106,13 @@ services:
       POSTGRES_PASSWORD: file:///run/secrets/authentik--pg_pass
       # S3 media storage
       AUTHENTIK_STORAGE__BACKEND: "s3"
-      AUTHENTIK_STORAGE__S3__ENDPOINT: "https://s3.${DOMAIN}"  
-      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"                           
-      AUTHENTIK_STORAGE__S3__BUCKET_NAME: "authentik-media"                
+      AUTHENTIK_STORAGE__S3__ENDPOINT: "https://s3.${DOMAIN}"
+      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"                
+      AUTHENTIK_STORAGE__S3__BUCKET_NAME: "authentik-media"
       AUTHENTIK_STORAGE__S3__ACCESS_KEY: "file:///run/secrets/authentik--s3_access_key"
       AUTHENTIK_STORAGE__S3__SECRET_KEY: "file:///run/secrets/authentik--s3_secret_key"
       # Must be browser-reachable, include bucket name, and have NO scheme (https:// controlled by SECURE_URLS)
-      AUTHENTIK_STORAGE__S3__CUSTOM_DOMAIN: "s3.${DOMAIN}/authentik-media"  
+      AUTHENTIK_STORAGE__S3__CUSTOM_DOMAIN: "s3.${DOMAIN}/authentik-media"
       AUTHENTIK_STORAGE__S3__ADDRESSING_STYLE: "path"
     secrets:
       - authentik--pg_user
