@@ -139,7 +139,7 @@ services:
   #       max-file: "5"
 
   runner-new:
-    image: gitea/runner:3.4.1
+    image: gitea/runner:3.4.2
     hostname: "runner-{{.Node.Hostname}}-{{.Task.Slot}}"
     environment:
       - TZ=${TZ}
