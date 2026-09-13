@@ -28,6 +28,15 @@ services:
       # Must be browser-reachable, include bucket name, and have NO scheme (https:// controlled by SECURE_URLS)
       AUTHENTIK_STORAGE__S3__CUSTOM_DOMAIN: "s3.${DOMAIN}/authentik-media"
       AUTHENTIK_STORAGE__S3__ADDRESSING_STYLE: "path"
+      # Email via SMTP2GO
+      AUTHENTIK_EMAIL__HOST: "mail.smtp2go.com"
+      AUTHENTIK_EMAIL__PORT: "465"
+      AUTHENTIK_EMAIL__USERNAME: "authentik-1738"
+      AUTHENTIK_EMAIL__PASSWORD: "file:///run/secrets/authentik--smtp_pass"
+      AUTHENTIK_EMAIL__USE_TLS: "dalse"
+      AUTHENTIK_EMAIL__USE_SSL: "true"
+      AUTHENTIK_EMAIL__TIMEOUT: "10"
+      AUTHENTIK_EMAIL__FROM: "Authentik <authentik@${DOMAIN}>"
     secrets:
       - authentik--pg_user
       - authentik--pg_pass
@@ -35,6 +44,7 @@ services:
       - authentik_secret_key
       - authentik--s3_access_key
       - authentik--s3_secret_key
+      - authentik--smtp_pass
     volumes:
       - /mnt/cephfs/app_data/authentik/custom-templates:/templates
     networks:
@@ -114,6 +124,15 @@ services:
       # Must be browser-reachable, include bucket name, and have NO scheme (https:// controlled by SECURE_URLS)
       AUTHENTIK_STORAGE__S3__CUSTOM_DOMAIN: "s3.${DOMAIN}/authentik-media"
       AUTHENTIK_STORAGE__S3__ADDRESSING_STYLE: "path"
+      # Email via SMTP2GO
+      AUTHENTIK_EMAIL__HOST: "mail.smtp2go.com"
+      AUTHENTIK_EMAIL__PORT: "465"
+      AUTHENTIK_EMAIL__USERNAME: "authentik-1738"
+      AUTHENTIK_EMAIL__PASSWORD: "file:///run/secrets/authentik--smtp_pass"
+      AUTHENTIK_EMAIL__USE_TLS: "false"
+      AUTHENTIK_EMAIL__USE_SSL: "true"
+      AUTHENTIK_EMAIL__TIMEOUT: "10"
+      AUTHENTIK_EMAIL__FROM: "Authentik <authentik@${DOMAIN}>"
     secrets:
       - authentik--pg_user
       - authentik--pg_pass
@@ -121,6 +140,7 @@ services:
       - authentik_secret_key
       - authentik--s3_access_key
       - authentik--s3_secret_key
+      - authentik--smtp_pass
     volumes:
       - /mnt/cephfs/app_data/authentik/custom-templates:/templates
       - /mnt/cephfs/app_data/authentik/certs:/certs
@@ -169,6 +189,8 @@ secrets:
   authentik--s3_access_key:
     external: true
   authentik--s3_secret_key:
+    external: true
+  authentik--smtp_pass:
     external: true
 
 networks:
