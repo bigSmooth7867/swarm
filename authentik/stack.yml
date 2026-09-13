@@ -7,7 +7,7 @@ services:
       AUTHENTIK_POSTGRESQL__USER: "file:///run/secrets/authentik--pg_user"
       AUTHENTIK_POSTGRESQL__PASSWORD: "file:///run/secrets/authentik--pg_pass"
       AUTHENTIK_POSTGRESQL__NAME: "file:///run/secrets/authentik--pg_db"
-      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik--authentik_secret_key"
+      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik_secret_key"
       # PostgreSQL - via HAProxy VIP port 5000 (primary/read-write)
       AUTHENTIK_POSTGRESQL__HOST: db.${DOMAIN}
       AUTHENTIK_POSTGRESQL__PORT: "5000"
@@ -32,7 +32,7 @@ services:
       - authentik--pg_user
       - authentik--pg_pass
       - authentik--pg_db
-      - authentik--authentik_secret_key
+      - authentik_secret_key
       - authentik--s3_access_key
       - authentik--s3_secret_key
     volumes:
@@ -94,7 +94,7 @@ services:
       AUTHENTIK_POSTGRESQL__USER: "file:///run/secrets/authentik--pg_user"
       AUTHENTIK_POSTGRESQL__PASSWORD: "file:///run/secrets/authentik--pg_pass"
       AUTHENTIK_POSTGRESQL__NAME: "file:///run/secrets/authentik--pg_db"
-      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik--authentik_secret_key"
+      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik_secret_key"
       AUTHENTIK_POSTGRESQL__HOST: db.${DOMAIN}
       AUTHENTIK_POSTGRESQL__PORT: "5000"
       AUTHENTIK_POSTGRESQL__SSLMODE: require
@@ -118,7 +118,7 @@ services:
       - authentik--pg_user
       - authentik--pg_pass
       - authentik--pg_db
-      - authentik--authentik_secret_key
+      - authentik_secret_key
       - authentik--s3_access_key
       - authentik--s3_secret_key
     volumes:
@@ -164,7 +164,7 @@ secrets:
     external: true
   authentik--pg_db:
     external: true
-  authentik--authentik_secret_key:
+  authentik_secret_key:
     external: true
   authentik--s3_access_key:
     external: true
