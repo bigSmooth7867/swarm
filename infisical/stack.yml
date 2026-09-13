@@ -9,6 +9,13 @@ services:
       - REDIS_URL=redis://redis:6379
       - SITE_URL=https://infisical.${DOMAIN}
       - TELEMETRY_ENABLED=false
+      - SMTP_HOST=mail.smtp2go.com
+      - SMTP_PORT=465
+      - SMTP_USERNAME=infisical-1738
+      - SMTP_PASSWORD=${SMTP_PASS}
+      - SMTP_FROM_ADDRESS=infisical@${DOMAIN}
+      - SMTP_FROM_NAME=Infisical
+      - SMTP_HELO_HOST=infisical.${DOMAIN}
     networks:
       - internal
       - proxy
