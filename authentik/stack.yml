@@ -21,7 +21,7 @@ services:
       # S3 media storage
       AUTHENTIK_STORAGE__BACKEND: "s3"
       AUTHENTIK_STORAGE__S3__ENDPOINT: "https://s3.${DOMAIN}"
-      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"               
+      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"
       AUTHENTIK_STORAGE__S3__BUCKET_NAME: "authentik-media"
       AUTHENTIK_STORAGE__S3__ACCESS_KEY: "file:///run/secrets/authentik--s3_access_key"
       AUTHENTIK_STORAGE__S3__SECRET_KEY: "file:///run/secrets/authentik--s3_secret_key"
@@ -107,7 +107,7 @@ services:
       # S3 media storage
       AUTHENTIK_STORAGE__BACKEND: "s3"
       AUTHENTIK_STORAGE__S3__ENDPOINT: "https://s3.${DOMAIN}"
-      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"                
+      AUTHENTIK_STORAGE__S3__REGION: "us-east-1"
       AUTHENTIK_STORAGE__S3__BUCKET_NAME: "authentik-media"
       AUTHENTIK_STORAGE__S3__ACCESS_KEY: "file:///run/secrets/authentik--s3_access_key"
       AUTHENTIK_STORAGE__S3__SECRET_KEY: "file:///run/secrets/authentik--s3_secret_key"
