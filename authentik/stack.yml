@@ -3,11 +3,11 @@ services:
     image: ghcr.io/goauthentik/server:2026.8.2
     command: server
     environment:
+      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik--secret_key"
       # Secrets via file:// prefix - authentik reads file contents
       AUTHENTIK_POSTGRESQL__USER: "file:///run/secrets/authentik--pg_user"
       AUTHENTIK_POSTGRESQL__PASSWORD: "file:///run/secrets/authentik--pg_pass"
       AUTHENTIK_POSTGRESQL__NAME: "file:///run/secrets/authentik--pg_db"
-      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik--secret_key"
       # PostgreSQL - via HAProxy VIP port 5000 (primary/read-write)
       AUTHENTIK_POSTGRESQL__HOST: db.${DOMAIN}
       AUTHENTIK_POSTGRESQL__PORT: "5000"
@@ -101,10 +101,10 @@ services:
     image: ghcr.io/goauthentik/server:2026.8.2
     command: worker
     environment:
+      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik--secret_key"
       AUTHENTIK_POSTGRESQL__USER: "file:///run/secrets/authentik--pg_user"
       AUTHENTIK_POSTGRESQL__PASSWORD: "file:///run/secrets/authentik--pg_pass"
       AUTHENTIK_POSTGRESQL__NAME: "file:///run/secrets/authentik--pg_db"
-      AUTHENTIK_SECRET_KEY: "file:///run/secrets/authentik--secret_key"
       AUTHENTIK_POSTGRESQL__HOST: db.${DOMAIN}
       AUTHENTIK_POSTGRESQL__PORT: "5000"
       AUTHENTIK_POSTGRESQL__SSLMODE: require
