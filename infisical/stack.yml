@@ -28,11 +28,11 @@ services:
         #TRAEFIK
         - "traefik.enable=true"
         - "traefik.http.routers.infisical.entrypoints=http"
-        - "traefik.http.routers.infisical.rule=Host(`infisical.${DOMAIN}`)" 
+        - "traefik.http.routers.infisical.rule=Host(`infisical.${DOMAIN}`)"
         - "traefik.http.middlewares.infisical-https-redirect.redirectscheme.scheme=https"
         - "traefik.http.routers.infisical.middlewares=infisical-https-redirect"
         - "traefik.http.routers.infisical-secure.entrypoints=https"
-        - "traefik.http.routers.infisical-secure.rule=Host(`infisical.${DOMAIN}`)" 
+        - "traefik.http.routers.infisical-secure.rule=Host(`infisical.${DOMAIN}`)"
         - "traefik.http.routers.infisical-secure.tls=true"
         - "traefik.http.routers.infisical-secure.service=infisical"
         - "traefik.http.services.infisical.loadbalancer.server.port=8080"
