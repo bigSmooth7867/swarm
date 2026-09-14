@@ -36,7 +36,7 @@ services:
         - "traefik.http.routers.infisical-secure.tls=true"
         - "traefik.http.routers.infisical-secure.service=infisical"
         - "traefik.http.services.infisical.loadbalancer.server.port=8080"
-        # Network 
+        # Network
         - "traefik.swarm.network=proxy"
       #HOMEPAGE
         - "homepage.group=Administration"
