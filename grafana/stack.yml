@@ -124,8 +124,8 @@ services:
         set -e
         TOKEN=$$(cat /run/secrets/grafana--gf_rendering_renderer_token)
         exec tini -- /usr/bin/grafana-image-renderer server --server.auth-token="$$TOKEN"
-    volumes:
-      - /mnt/cephfs/app_data/grafana-image-render/config.json:/usr/src/app/config.json
+    # volumes:
+    #   - /mnt/cephfs/app_data/grafana-image-render/config.json:/usr/src/app/config.json
     networks:
       - internal
     deploy:
