@@ -100,7 +100,7 @@ services:
     secrets:
       - grafana--gf_rendering_renderer_token
     environment:
-      - LOG_LEVEL=warn
+      LOG_LEVEL: warn
     entrypoint:
       - /bin/sh
       - -c
@@ -208,7 +208,7 @@ services:
     image: grafana/alloy:v1.19.2
     hostname: "{{.Node.Hostname}}"
     environment:
-      - NODE_NAME={{.Node.Hostname}}
+      NODE_NAME: "{{.Node.Hostname}}"
     command:
       - run
       - --server.http.listen-addr=0.0.0.0:12345
