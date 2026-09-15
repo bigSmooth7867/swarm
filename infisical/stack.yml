@@ -129,9 +129,9 @@ services:
 volumes:
   op-data:
 
-secrets:
-  op-infisical-credentials-file--1password-credentials:
-    external: true
+# secrets:
+#   op-infisical-credentials-file--1password-credentials:
+#     external: true
 
 networks:
   proxy:
