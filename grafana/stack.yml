@@ -42,7 +42,7 @@ services:
       GF_DATABASE_SSL_MODE: require
       ######GIT######
       GF_PROVISIONING_ALLOWED_GIT_URLS: forgejo.${DOMAIN}
-      GF_INSTALL_PLUGINS: >-
+      GF_PLUGINS_PREINSTALL_SYNC: >-
         clarity89-finnhub-datasource,
         grafana-github-datasource,
         grafana-googlesheets-datasource,
