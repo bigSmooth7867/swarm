@@ -87,9 +87,9 @@ services:
   op-connect-api:
     image: 1password/connect-api:1.8
     environment:
-      - OP_SESSION=/run/secrets/op-infisical-credentials-file--1password-credentials 
+      - OP_SESSION=/run/secrets/op-infisical-credentials-file--1password-credentials
     secrets:
-      - op-infisical-credentials-file--1password-credentials 
+      - op-infisical-credentials-file--1password-credentials
     volumes:
       - op-data:/home/opuser/.op/data
     networks:
@@ -108,9 +108,9 @@ services:
   op-connect-sync:
     image: 1password/connect-sync:1.8
     environment:
-      - OP_SESSION=/run/secrets/op-infisical-credentials-file--1password-credentials 
+      - OP_SESSION=/run/secrets/op-infisical-credentials-file--1password-credentials
     secrets:
-      - op-infisical-credentials-file--1password-credentials 
+      - op-infisical-credentials-file--1password-credentials
     volumes:
       - op-data:/home/opuser/.op/data
     networks:
@@ -130,7 +130,7 @@ volumes:
   op-data:
 
 secrets:
-  op-infisical-credentials-file--1password-credentials :
+  op-infisical-credentials-file--1password-credentials:
     external: true
 
 networks:
