@@ -116,7 +116,7 @@ services:
     secrets:
       - grafana--gf_rendering_renderer_token
     environment:
-      LOG_LEVEL: warn
+      LOG_LEVEL: debug
     entrypoint:
       - /bin/sh
       - -c
