@@ -42,6 +42,22 @@ services:
       GF_DATABASE_SSL_MODE: require
       ######GIT######
       GF_PROVISIONING_ALLOWED_GIT_URLS: forgejo.${DOMAIN}
+      GF_INSTALL_PLUGINS: >-
+        clarity89-finnhub-datasource,
+        grafana-github-datasource,
+        grafana-googlesheets-datasource,
+        grafana-llm-app,
+        grafana-mqtt-datasource,
+        marcusolsson-calendar-panel,
+        marcusolsson-json-datasource,
+        marcusolsson-static-datasource,
+        netdatacloud-netdata-datasource,
+        netsage-sankey-panel,
+        novatec-sdg-panel,
+        rocketcom-astrotheme-panel,
+        vaduga-mapgl-panel,
+        williamvenner-timepickerbuttons-panel,
+        yesoreyeram-infinity-datasource
     volumes:
       - /mnt/cephfs/app_data/grafana:/var/lib/grafana
     networks:
