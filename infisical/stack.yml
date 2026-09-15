@@ -16,6 +16,7 @@ services:
       - SMTP_FROM_ADDRESS=infisical@${DOMAIN}
       - SMTP_FROM_NAME=Infisical
       - SMTP_HELO_HOST=infisical.${DOMAIN}
+      - ALLOW_INTERNAL_IP_CONNECTIONS=true
     networks:
       - internal
       - proxy
