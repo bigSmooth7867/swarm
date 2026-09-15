@@ -58,8 +58,8 @@ services:
         vaduga-mapgl-panel,
         williamvenner-timepickerbuttons-panel,
         yesoreyeram-infinity-datasource
-    volumes:
-      - /mnt/cephfs/app_data/grafana:/var/lib/grafana
+    # volumes:
+    #   - /mnt/cephfs/app_data/grafana:/var/lib/grafana
     networks:
       - internal
       - proxy
