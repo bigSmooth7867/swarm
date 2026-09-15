@@ -220,7 +220,7 @@ services:
   # Immich Frame
   # ============================================================
   immich-frame:
-    image: ghcr.io/immichframe/immichframe:v1.0.37.0
+    image: ghcr.io/immichframe/immichframe:v1.0.38.0
     volumes:
       - /mnt/cephfs/app_data/immich-frame/config:/app/Config
     environment:
