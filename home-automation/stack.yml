@@ -101,7 +101,7 @@ services:
 
 
   esphome:
-    image: ghcr.io/esphome/esphome:2026.8.2
+    image: ghcr.io/esphome/esphome:2026.9.0
     command: ["dashboard", "/config", "--log-level", "warning"]
     environment:
       - PUID=${PUID}
