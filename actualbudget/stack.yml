@@ -1,6 +1,6 @@
 services:
   actual_server:
-    image: actualbudget/actual-server:26.8.1
+    image: actualbudget/actual-server:26.9.0
     volumes:
       - /home/nexus/local/actualbudget/data:/data
       - /home/nexus/local/actualbudget/config/config.json:/app/config.json
