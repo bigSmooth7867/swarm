@@ -1,6 +1,6 @@
 services:
   vaultls:
-    image: ghcr.io/7ritn/vaultls:v1.3.0
+    image: ghcr.io/7ritn/vaultls:v1.4.0
     volumes:
       - /mnt/cephfs/app_data/vaultls/data:/app/data
     environment:
