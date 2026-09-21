@@ -293,6 +293,15 @@
       "minimumReleaseAge": "30 minutes"
     },
     {
+      "description": "pgAdmin4: every release is a 'minor' - allow automerge after soak",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["dpage/pgadmin4"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "minimumReleaseAge": "3 days",
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
       "description": "Critical infra: PRs only, no auto-merge (manual review required) - overrides patch automerge above",
       "matchDatasources": ["docker"],
       "matchPackageNames": [
