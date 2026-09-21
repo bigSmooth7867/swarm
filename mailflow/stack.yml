@@ -43,7 +43,7 @@ services:
         - "dnsweaver.hostname=mailflow.${DOMAIN}"
 
   backend:
-    image: ghcr.io/maathimself/mailflow-backend:3.3.0
+    image: ghcr.io/maathimself/mailflow-backend:3.5.2
     extra_hosts:
       - "db.${DOMAIN}:${PG_IP}"
     entrypoint: /bin/sh
