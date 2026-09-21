@@ -223,11 +223,14 @@
       "prBodyNotes": ["[Release notes](https://github.com/netbox-community/netbox-docker/releases)"]
     },
     {
-      "description": "pgAdmin4 - add sourceUrl for changelog links",
+      "description": "pgAdmin4 - no GitHub releases; notes live on pgadmin.org docs, one page per version",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["dpage/pgadmin4"],
       "sourceUrl": "https://github.com/pgadmin-org/pgadmin4",
-      "prBodyNotes": ["[Release notes](https://github.com/pgadmin-org/pgadmin4/releases)"]
+      "fetchChangeLogs": "off",
+      "prBodyNotes": [
+        "[Release notes](https://www.pgadmin.org/docs/pgadmin4/latest/release_notes_{{{newMajor}}}_{{{newMinor}}}.html) · [All releases](https://www.pgadmin.org/docs/pgadmin4/latest/release_notes.html)"
+      ]
     },
     {
       "description": "Traccar - release notes are published on the blog, not in GitHub releases; blog posts are per minor version (6.13.1 lives under traccar-6-13)",
