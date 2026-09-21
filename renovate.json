@@ -78,19 +78,7 @@
     },
 
     {
-      "description": "=== Version locks === PostgreSQL: lock to version 16",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["postgres"],
-      "allowedVersions": "/^16\\./"
-    },
-    {
-      "description": "MySQL: lock to version 8",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["mysql"],
-      "allowedVersions": "/^8\\./"
-    },
-    {
-      "description": "Redis: lock to version 7",
+      "description": "=== Version locks === Redis: lock to version 7",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["redis"],
       "allowedVersions": "/^7\\./"
@@ -105,7 +93,7 @@
     {
       "description": "=== Disabled updates === Immich dependencies: update with Immich releases only",
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["valkey/valkey", "ghcr.io/immich-app/postgres", "tensorchord/pgvecto-rs"],
+      "matchPackageNames": ["valkey/valkey"],
       "enabled": false
     },
     {
@@ -249,18 +237,21 @@
       "prBodyNotes": ["[Release notes](https://github.com/7ritn/vaultls/releases)"]
     },
     {
-      "description": "wg-easy - add sourceUrl for changelog links",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["ghcr.io/wg-easy/wg-easy"],
-      "sourceUrl": "https://github.com/wg-easy/wg-easy",
-      "prBodyNotes": ["[Release notes](https://github.com/wg-easy/wg-easy/releases)"]
-    },
-    {
       "description": "Wizarr - fix incorrect sourceUrl (OCI labels point to astral-sh/uv)",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["ghcr.io/wizarrrr/wizarr"],
       "sourceUrl": "https://github.com/wizarrrr/wizarr",
       "prBodyNotes": ["[Release notes](https://github.com/wizarrrr/wizarr/releases)"]
+    },
+
+    {
+      "description": "=== Grouping === Mailflow: backend + frontend are released together - one PR so they never drift apart",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "ghcr.io/maathimself/mailflow-backend",
+        "ghcr.io/maathimself/mailflow-frontend"
+      ],
+      "groupName": "mailflow"
     },
 
     {
@@ -287,9 +278,10 @@
       "minimumReleaseAgeBehaviour": "timestamp-optional"
     },
     {
-      "description": "SearXNG: daily rolling builds - near-zero cooldown so patches automerge immediately (must be a positive value, not null/0: the stability check must exist and pass green for automerge to work in a repo with no CI)",
+      "description": "SearXNG: daily rolling builds - automerge ALL update types (date-based tags: a new month reads as 'minor', a new year as 'major', so the patch-only rule above would stall at every month boundary); near-zero cooldown (must be a positive value, not null/0: the stability check must exist and pass green for automerge to work in a repo with no CI)",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["searxng/searxng"],
+      "automerge": true,
       "minimumReleaseAge": "30 minutes"
     },
     {
@@ -305,8 +297,7 @@
       "description": "Critical infra: PRs only, no auto-merge (manual review required) - overrides patch automerge above",
       "matchDatasources": ["docker"],
       "matchPackageNames": [
-        "ghcr.io/immich-app/immich-server",
-        "ghcr.io/wg-easy/wg-easy"
+        "ghcr.io/immich-app/immich-server"
       ],
       "automerge": false
     },
