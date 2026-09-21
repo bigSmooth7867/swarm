@@ -148,7 +148,7 @@ services:
           memory: 256M
 
   netbox-redis:
-    image: redis:7.4-alpine
+    image: redis:7.4.11-alpine
     command:
       - redis-server
       - --maxmemory
