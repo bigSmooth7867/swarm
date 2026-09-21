@@ -111,7 +111,7 @@ services:
 
   igotify:
     hostname: igotify
-    image: ghcr.io/androidseb25/igotify-notification-assist:v1.5.1.3
+    image: ghcr.io/androidseb25/igotify-notification-assist:v1.6.0.1
     # ports:
     #   - "8681:8080"
     #environment:                 # option environment see above note
