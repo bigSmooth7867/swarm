@@ -4,6 +4,10 @@
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Renovate Dashboard",
   "labels": ["renovate"],
+  "prBodyDefinitions": {
+    "Released": "{{#if releaseTimestamp}}{{lookup (split releaseTimestamp 'T') 0}}{{else}}unknown{{/if}}"
+  },
+  "prBodyColumns": ["Package", "Type", "Update", "Change", "Released", "Pending"],
   "configMigration": true,
   "prHourlyLimit": 40,
   "prConcurrentLimit": 40,
