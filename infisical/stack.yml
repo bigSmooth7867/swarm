@@ -85,7 +85,7 @@ services:
   # 1Password Connect - reachable from Infisical at http://op-connect-api:8080
   # docker secret create op-infisical-credentials-file--1password-credentials  1password-credentials.json
   op-connect-api:
-    image: 1password/connect-api:1.8
+    image: 1password/connect-api:1.8.2
     environment:
       - OP_SESSION=/run/secrets/op-infisical-credentials-file--1password-credentials
     secrets:
@@ -106,7 +106,7 @@ services:
         max-file: "3"
 
   op-connect-sync:
-    image: 1password/connect-sync:1.8
+    image: 1password/connect-sync:1.8.2
     environment:
       - OP_SESSION=/run/secrets/op-infisical-credentials-file--1password-credentials
     secrets:
