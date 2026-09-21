@@ -74,7 +74,7 @@ services:
         # - "dnsweaver.hostname=mailserver.${DOMAIN}"
 
   gotify:
-    image: gotify/server:2.9.1
+    image: gotify/server:3.1.1
     hostname: gotify
     volumes:
       - /mnt/cephfs/app_data/gotify/data:/app/data
