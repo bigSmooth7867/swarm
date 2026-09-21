@@ -1,6 +1,6 @@
 services:
   pgadmin:
-    image: dpage/pgadmin4:9.17
+    image: dpage/pgadmin4:9.18
     extra_hosts:
       - "db.${DOMAIN}:${PG_IP}"
     secrets:
