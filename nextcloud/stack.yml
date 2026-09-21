@@ -1,6 +1,6 @@
 services:
   nextcloud:
-    image: nextcloud:34.0.3-apache
+    image: nextcloud:34.0.4-apache
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost/status.php | grep -q '\"installed\":true' || exit 1"]
       interval: 30s
@@ -81,7 +81,7 @@ services:
         max-file: "5"
 
   nextcloud-cron:
-    image: nextcloud:34.0.3-apache   # keep in lockstep with nextcloud service
+    image: nextcloud:34.0.4-apache   # keep in lockstep with nextcloud service
     entrypoint: /cron.sh
     environment:
       - TZ=${TZ}
