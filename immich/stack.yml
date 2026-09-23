@@ -131,7 +131,7 @@ services:
       DB_PORT: "5000"
       SECURE_COOKIE: "true"
       PGSSLMODE: "require"
-      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      # NODE_TLS_REJECT_UNAUTHORIZED: "0"
       # Not working or implemented yet
       OAUTH_ENABLED: "true"
       # OAUTH_BUTTON_TEXT: "Login with key"
@@ -345,5 +345,5 @@ networks:
   internal:
     driver: overlay
 
-
+#notes Command for immich power tools
         # export IMMICH_API_KEY=$$(cat /run/secrets/immich_power_tools--apikey_ipt)
