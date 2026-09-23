@@ -161,7 +161,7 @@ services:
         - "traefik.http.routers.ipt-secure.tls=true"
         - "traefik.http.routers.ipt-secure.service=ipt"
         - "traefik.http.services.ipt.loadbalancer.server.port=3000"
-        - "traefik.http.routers.ipt-secure.middlewares=middlewares-authentik@file"
+        # - "traefik.http.routers.ipt-secure.middlewares=middlewares-authentik@file"
         - "traefik.swarm.network=proxy"
         # HOMEPAGE
         - "homepage.group=Personal"
