@@ -109,7 +109,6 @@ services:
     command:
       - -c
       - |
-        export IMMICH_API_KEY=$$(cat /run/secrets/immich_power_tools--apikey_ipt)
         export DB_USERNAME=$$(cat /run/secrets/immich--pg_user)
         export DB_PASSWORD=$$(cat /run/secrets/immich--pg_pass)
         export DB_DATABASE_NAME=$$(cat /run/secrets/immich--pg_db)
@@ -345,3 +344,6 @@ networks:
     external: true
   internal:
     driver: overlay
+
+
+        # export IMMICH_API_KEY=$$(cat /run/secrets/immich_power_tools--apikey_ipt)
