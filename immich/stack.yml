@@ -134,7 +134,7 @@ services:
       PGSSLMODE: "require"
       NODE_TLS_REJECT_UNAUTHORIZED: "0"
       # Not working or implemented yet
-      # OAUTH_ENABLED: "true"
+      OAUTH_ENABLED: "true"
       # OAUTH_BUTTON_TEXT: "Login with key"
     networks:
       - proxy
