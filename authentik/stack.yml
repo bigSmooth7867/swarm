@@ -87,8 +87,8 @@ services:
         - "homepage.name=authentik"
         - "homepage.icon=authentik.png"
         - "homepage.href=https://auth.${DOMAIN}"
-        # DNSWEAVER
-        - "dnsweaver.hostname=auth.${DOMAIN}"
+        # # DNSWEAVER
+        # - "dnsweaver.hostname=auth.${DOMAIN}"
 
     healthcheck:
       test: ["CMD", "ak", "healthcheck"]
