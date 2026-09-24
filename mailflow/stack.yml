@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ghcr.io/maathimself/mailflow-frontend:3.5.2
+    image: ghcr.io/maathimself/mailflow-frontend:3.5.6
     # volumes:
     #   - ./certs:/etc/nginx/ssl
     healthcheck:
@@ -43,7 +43,7 @@ services:
         - "dnsweaver.hostname=mailflow.${DOMAIN}"
 
   backend:
-    image: ghcr.io/maathimself/mailflow-backend:3.5.2
+    image: ghcr.io/maathimself/mailflow-backend:3.5.6
     extra_hosts:
       - "db.${DOMAIN}:${PG_IP}"
     entrypoint: /bin/sh
