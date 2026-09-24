@@ -1,6 +1,6 @@
 services:
   meshcentral:
-    image: ghcr.io/ylianst/meshcentral:1.2.5
+    image: ghcr.io/ylianst/meshcentral:1.2.6
     environment:
       - DYNAMIC_CONFIG=false
     extra_hosts:
