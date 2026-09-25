@@ -1,24 +1,24 @@
-name: Mirror main to GitHub
+# name: Mirror main to GitHub
 
-on:
-  push:
-    branches: [main]
+# on:
+#   push:
+#     branches: [main]
 
-jobs:
-  mirror:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone main only
-        run: |
-          git clone --branch main --single-branch \
-            "${{ gitea.server_url }}/${{ gitea.repository }}.git" repo
+# jobs:
+#   mirror:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Clone main only
+#         run: |
+#           git clone --branch main --single-branch \
+#             "${{ gitea.server_url }}/${{ gitea.repository }}.git" repo
 
-      - name: Push to GitHub
-        env:
-          GH_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
-          GH_REPO: ${{ secrets.GH_MIRROR_REPO }}
-        run: |
-          cd repo
-          git push --force \
-            "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" \
-            HEAD:main
+#       - name: Push to GitHub
+#         env:
+#           GH_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+#           GH_REPO: ${{ secrets.GH_MIRROR_REPO }}
+#         run: |
+#           cd repo
+#           git push --force \
+#             "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" \
+#             HEAD:main
