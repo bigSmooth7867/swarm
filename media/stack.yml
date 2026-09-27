@@ -138,7 +138,7 @@ services:
       # Preserve current auth/behavior settings (Sonarr uses Basic/Enabled,
       # unlike Radarr's Forms — matches its existing config.xml)
       - SONARR__LOG__LEVEL=Warn
-      - SONARR__AUTH__METHOD=Basic
+      - SONARR__AUTH__METHOD=Forms #Basic
       - SONARR__AUTH__REQUIRED=DisabledForLocalAddresses #Enabled
       - SONARR__LOG__ANALYTICSENABLED=False
       - SONARR__APP__INSTANCENAME=Sonarr
