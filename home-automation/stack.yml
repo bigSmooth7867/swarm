@@ -30,9 +30,7 @@ services:
         parallelism: 1
       restart_policy:
         condition: any
-        delay: 10s
-        max_attempts: 5
-        window: 120s
+        delay: 5s
       resources:
         limits:
           memory: 256M
@@ -198,8 +196,6 @@ services:
       restart_policy:
         condition: any
         delay: 10s
-        max_attempts: 5
-        window: 120s
       labels:
         # Traefik
         - "traefik.enable=true"
