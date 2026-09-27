@@ -77,7 +77,7 @@ services:
       # Preserve auth/behavior settings from the old config.xml so a fresh
       # cache volume doesn't reset them to first-run defaults
       - RADARR__LOG__LEVEL=Warn
-      - RADARR__AUTH__METHOD=Forms
+      - RADARR__AUTH__METHOD=External #Forms
       - RADARR__AUTH__REQUIRED=DisabledForLocalAddresses
       - RADARR__LOG__ANALYTICSENABLED=False
       - RADARR__APP__INSTANCENAME=Radarr
@@ -138,7 +138,7 @@ services:
       # Preserve current auth/behavior settings (Sonarr uses Basic/Enabled,
       # unlike Radarr's Forms — matches its existing config.xml)
       - SONARR__LOG__LEVEL=Warn
-      - SONARR__AUTH__METHOD=Forms #Basic
+      - SONARR__AUTH__METHOD=External #Forms #Basic
       - SONARR__AUTH__REQUIRED=DisabledForLocalAddresses #Enabled
       - SONARR__LOG__ANALYTICSENABLED=False
       - SONARR__APP__INSTANCENAME=Sonarr
