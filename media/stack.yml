@@ -4,7 +4,7 @@ services:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
-      - TZ=Etc/UTC
+      - TZ=${TZ}
       - UMASK=002
       - PROWLARR__SERVER__PORT=9696
       - PROWLARR__POSTGRES__HOST=db.${DOMAIN}
@@ -61,7 +61,7 @@ services:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
-      - TZ=Etc/UTC
+      - TZ=${TZ}
       - UMASK=002
       # Config pinned via env (overrides config.xml) — state lives in Postgres.
       # DB names/users MUST match the values in your current config.xml.
@@ -122,7 +122,7 @@ services:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
-      - TZ=Etc/UTC
+      - TZ=${TZ}
       - UMASK=002
       # Config pinned via env (overrides config.xml) — state lives in Postgres.
       # DB names/users MUST match the values in your current config.xml.
@@ -274,6 +274,50 @@ services:
         - "homepage.href=https://sabnzbd.${DOMAIN}"
         # DNSWEAVER
         - "dnsweaver.hostname=sabnzbd.${DOMAIN}"
+
+  nzbget:
+    image: nzbgetcom/nzbget:v26.3
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - NZBGET_USER=${NZBGET_USER}     
+      - NZBGET_PASS=${NZBGET_PASS}
+    volumes:
+      - /home/nexus/local/nzbget/config:/config
+      - media-usenet:/data/usenet
+    # ports:
+    #   - 6789:6789
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.hostname == swarm-02
+      labels:
+        #TRAEFIK
+        - "traefik.enable=true"
+        - "traefik.http.routers.nzbget.entrypoints=http"
+        - "traefik.http.routers.nzbget.rule=Host(`nzbget.${DOMAIN}`)" 
+        - "traefik.http.middlewares.nzbget-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.nzbget.middlewares=nzbget-https-redirect"
+        - "traefik.http.routers.nzbget-secure.entrypoints=https"
+        - "traefik.http.routers.nzbget-secure.rule=Host(`nzbget.${DOMAIN}`)" 
+        - "traefik.http.routers.nzbget-secure.tls=true"
+        - "traefik.http.routers.nzbget-secure.service=nzbget"
+        - "traefik.http.services.nzbget.loadbalancer.server.port=6789"
+        # Network 
+        - "traefik.swarm.network=proxy"
+      #HOMEPAGE
+        - "homepage.group=Media"
+        - "homepage.name=nzbget"
+        - "homepage.icon=nzbget.png"
+        - "homepage.href=https://nzbget.${DOMAIN}"
+      # DNSWEAVER
+        - "dnsweaver.hostname=nzbget.${DOMAIN}"
 
   iSponsorBlockTV:
       image: ghcr.io/dmunozv04/isponsorblocktv:v2.11.0
