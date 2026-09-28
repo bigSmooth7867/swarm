@@ -237,7 +237,7 @@ services:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
-      - TZ=Etc/UTC
+      - TZ=${TZ}
       - UMASK=002
     volumes:
       - /home/nexus/local/sabnzbd/config:/config
