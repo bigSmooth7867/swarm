@@ -349,7 +349,6 @@ services:
   #         - pangolin.public-resources.wizarr.targets[0].port=443
 
 volumes:
-
   media-data:
     driver: local
     driver_opts:
