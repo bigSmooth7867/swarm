@@ -42,51 +42,22 @@ services:
         condition: any
       labels:
         #TRAEFIK
-        # - "traefik.enable=true"
-        # - "traefik.http.routers.wallos.entrypoints=http"
-        # - "traefik.http.routers.wallos.rule=Host(`wallos.${DOMAIN}`)"
-        # - "traefik.http.middlewares.wallos-https-redirect.redirectscheme.scheme=https"
-        # - "traefik.http.routers.wallos.middlewares=wallos-https-redirect"
-        # - "traefik.http.routers.wallos-secure.entrypoints=https"
-        # - "traefik.http.routers.wallos-secure.rule=Host(`wallos.${DOMAIN}`)"
-        # - "traefik.http.routers.wallos-secure.tls=true"
-        # - "traefik.http.routers.wallos-secure.service=wallos"
-        # - "traefik.http.services.wallos.loadbalancer.server.port=80"
-        # - "traefik.swarm.network=proxy"
-
-        #TRAEFIK    
         - "traefik.enable=true"
-        ## Internal HTTP router
-        - "traefik.http.routers.wallos-internal.entrypoints=http"
-        - "traefik.http.routers.wallos-internal.rule=Host(`wallos.${DOMAIN}`)"
-        - "traefik.http.routers.wallos-internal.middlewares=wallos-https-redirect"
-        ## External HTTP router
-        - "traefik.http.routers.wallos-external.entrypoints=http-external"
-        - "traefik.http.routers.wallos-external.rule=Host(`wallos.${DOMAIN}`)"
-        - "traefik.http.routers.wallos-external.middlewares=wallos-https-redirect"
-        ## Internal HTTPS router
-        - "traefik.http.routers.wallos-secure-internal.entrypoints=https"
-        - "traefik.http.routers.wallos-secure-internal.rule=Host(`wallos.${DOMAIN}`)"
-        - "traefik.http.routers.wallos-secure-internal.tls=true"
-        - "traefik.http.routers.wallos-secure-internal.service=wallos"
-        ## External HTTPS router
-        - "traefik.http.routers.wallos-secure-external.entrypoints=https-external"
-        - "traefik.http.routers.wallos-secure-external.rule=Host(`wallos.${DOMAIN}`)" 
-        - "traefik.http.routers.wallos-secure-external.tls=true"
-        - "traefik.http.routers.wallos-secure-external.service=wallos"
-        ## Service Configuration
+        - "traefik.http.routers.wallos.entrypoints=http"
+        - "traefik.http.routers.wallos.rule=Host(`wallos.${DOMAIN}`)"
+        - "traefik.http.middlewares.wallos-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.wallos.middlewares=wallos-https-redirect"
+        - "traefik.http.routers.wallos-secure.entrypoints=https"
+        - "traefik.http.routers.wallos-secure.rule=Host(`wallos.${DOMAIN}`)"
+        - "traefik.http.routers.wallos-secure.tls=true"
+        - "traefik.http.routers.wallos-secure.service=wallos"
         - "traefik.http.services.wallos.loadbalancer.server.port=80"
-        ## Middleware for HTTPS redirection
-        - "traefik.http.middlewares.wallos-https-redirect.redirectscheme.scheme=https"  
-        ## mTLS - EXTERNAL (uncomment ONE)
-        - "traefik.http.routers.wallos-secure-external.tls.options=mtls@file"
-        # Network 
         - "traefik.swarm.network=proxy"
         #HOMEPAGE
-        - homepage.group=Personal
-        - homepage.name=wallos
-        - homepage.icon=wallos.png
-        - homepage.href=https://wallos.${DOMAIN}
+        - "homepage.group=Personal"
+        - "homepage.name=wallos"
+        - "homepage.icon=wallos.png"
+        - "homepage.href=https://wallos.${DOMAIN}"
         # DNSWEAVER
         - "dnsweaver.hostname=wallos.${DOMAIN}"
     logging:
