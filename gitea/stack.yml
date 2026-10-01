@@ -172,7 +172,10 @@ services:
     networks:
       - internal
     deploy:
-      replicas: 3
+      replicas: 2
+      placement:
+        constraints:
+          - node.labels.homeauto == true   
       restart_policy:
         condition: any
         delay: 3s
