@@ -32,6 +32,9 @@ services:
       - proxy
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.labels.homeauto == true   
       restart_policy:
         condition: any
       labels:
@@ -93,6 +96,9 @@ services:
       - proxy
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.labels.homeauto == true   
       restart_policy:
         condition: any
       labels:
@@ -154,6 +160,9 @@ services:
       - proxy
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.labels.homeauto == true   
       restart_policy:
         condition: any
       labels:
@@ -320,13 +329,16 @@ services:
         - "dnsweaver.hostname=nzbget.${DOMAIN}"
 
   iSponsorBlockTV:
-      image: ghcr.io/dmunozv04/isponsorblocktv:v2.11.0
-      volumes:
-        - /mnt/cephfs/app_data/isponsorblocktv:/app/data
-      networks:
-        - proxy
-      deploy:
-        replicas: 1
+    image: ghcr.io/dmunozv04/isponsorblocktv:v2.11.0
+    volumes:
+      - /mnt/cephfs/app_data/isponsorblocktv:/app/data
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.homeauto == true   
         restart_policy:
           condition: any
 
