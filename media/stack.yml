@@ -241,48 +241,48 @@ services:
         # DNSWEAVER
         - "dnsweaver.hostname=profilarr.${DOMAIN}"
 
-  sabnzbd:
-    image: linuxserver/sabnzbd:5.1.3-ls272
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - UMASK=002
-    volumes:
-      - /home/nexus/local/sabnzbd/config:/config
-      - media-usenet:/data/usenet
-    # ports:
-    #   - 8080:8080
-    networks:
-      - proxy
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: any
-      placement:
-        constraints:
-          - node.hostname == swarm-02
-      labels:
-      #TRAEFIK
-        - "traefik.enable=true"
-        - "traefik.http.routers.sabnzbd.entrypoints=http"
-        - "traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.${DOMAIN}`)"
-        - "traefik.http.middlewares.sabnzbd-https-redirect.redirectscheme.scheme=https"
-        - "traefik.http.routers.sabnzbd.middlewares=sabnzbd-https-redirect"
-        - "traefik.http.routers.sabnzbd-secure.entrypoints=https"
-        - "traefik.http.routers.sabnzbd-secure.rule=Host(`sabnzbd.${DOMAIN}`)"
-        - "traefik.http.routers.sabnzbd-secure.tls=true"
-        - "traefik.http.routers.sabnzbd-secure.service=sabnzbd"
-        - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
-        - "traefik.http.routers.sabnzbd-secure.middlewares=middlewares-authentik@file"
-        - "traefik.swarm.network=proxy"
-      #HOMEPAGE
-        - "homepage.group=Media"
-        - "homepage.name=sabnzbd"
-        - "homepage.icon=sabnzbd.png"
-        - "homepage.href=https://sabnzbd.${DOMAIN}"
-        # DNSWEAVER
-        - "dnsweaver.hostname=sabnzbd.${DOMAIN}"
+  # sabnzbd:
+  #   image: linuxserver/sabnzbd:5.1.3-ls272
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TZ=${TZ}
+  #     - UMASK=002
+  #   volumes:
+  #     - /home/nexus/local/sabnzbd/config:/config
+  #     - media-usenet:/data/usenet
+  #   # ports:
+  #   #   - 8080:8080
+  #   networks:
+  #     - proxy
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: any
+  #     placement:
+  #       constraints:
+  #         - node.hostname == swarm-02
+  #     labels:
+  #     #TRAEFIK
+  #       - "traefik.enable=true"
+  #       - "traefik.http.routers.sabnzbd.entrypoints=http"
+  #       - "traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.${DOMAIN}`)"
+  #       - "traefik.http.middlewares.sabnzbd-https-redirect.redirectscheme.scheme=https"
+  #       - "traefik.http.routers.sabnzbd.middlewares=sabnzbd-https-redirect"
+  #       - "traefik.http.routers.sabnzbd-secure.entrypoints=https"
+  #       - "traefik.http.routers.sabnzbd-secure.rule=Host(`sabnzbd.${DOMAIN}`)"
+  #       - "traefik.http.routers.sabnzbd-secure.tls=true"
+  #       - "traefik.http.routers.sabnzbd-secure.service=sabnzbd"
+  #       - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
+  #       - "traefik.http.routers.sabnzbd-secure.middlewares=middlewares-authentik@file"
+  #       - "traefik.swarm.network=proxy"
+  #     #HOMEPAGE
+  #       - "homepage.group=Media"
+  #       - "homepage.name=sabnzbd"
+  #       - "homepage.icon=sabnzbd.png"
+  #       - "homepage.href=https://sabnzbd.${DOMAIN}"
+  #       # DNSWEAVER
+  #       - "dnsweaver.hostname=sabnzbd.${DOMAIN}"
 
   nzbget:
     image: nzbgetcom/nzbget:v26.3
