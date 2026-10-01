@@ -339,8 +339,8 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
-        restart_policy:
-          condition: any
+      restart_policy:
+        condition: any
 
   # wizarr:
   #     image: ghcr.io/wizarrrr/wizarr:v2026.7.1
