@@ -318,6 +318,7 @@ services:
         - "traefik.http.routers.nzbget-secure.tls=true"
         - "traefik.http.routers.nzbget-secure.service=nzbget"
         - "traefik.http.services.nzbget.loadbalancer.server.port=6789"
+        - "traefik.http.routers.sonarr-secure.middlewares=middlewares-authentik@file"
         # Network 
         - "traefik.swarm.network=proxy"
       #HOMEPAGE
@@ -343,7 +344,7 @@ services:
         condition: any
 
   # wizarr:
-  #     image: ghcr.io/wizarrrr/wizarr:v2026.7.1
+  #     image: ghcr.io/wizarrrr/wizarr:v2026.9.1
   #     volumes:
   #       - /home/nexus/local/wizarr/config/database:/data/database
   #     environment:
@@ -362,47 +363,24 @@ services:
   #         constraints:
   #           - node.hostname == swarm-02
   #       labels:
-  #       #TRAEFIK
+  #         #TRAEFIK
   #         - "traefik.enable=true"
-  #         ## Internal HTTP router
-  #         - "traefik.http.routers.invite-internal.entrypoints=http"
-  #         - "traefik.http.routers.invite-internal.rule=Host(`invite.${DOMAIN}`)"
-  #         - "traefik.http.routers.invite-internal.middlewares=invite-https-redirect"
-  #         ## External HTTP router
-  #         - "traefik.http.routers.invite-external.entrypoints=http-external"
-  #         - "traefik.http.routers.invite-external.rule=Host(`invite.${DOMAIN}`)"
-  #         - "traefik.http.routers.invite-external.middlewares=invite-https-redirect"
-  #         ## Internal HTTPS router
-  #         - "traefik.http.routers.invite-secure-internal.entrypoints=https"
-  #         - "traefik.http.routers.invite-secure-internal.rule=Host(`invite.${DOMAIN}`)"
-  #         - "traefik.http.routers.invite-secure-internal.tls=true"
-  #         - "traefik.http.routers.invite-secure-internal.service=invite"
-  #         ## External HTTPS router
-  #         - "traefik.http.routers.invite-secure-external.entrypoints=https-external"
-  #         - "traefik.http.routers.invite-secure-external.rule=Host(`invite.${DOMAIN}`)"
-  #         - "traefik.http.routers.invite-secure-external.tls=true"
-  #         - "traefik.http.routers.invite-secure-external.service=invite"
-  #         ## Service Configuration
-  #         - "traefik.http.services.invite.loadbalancer.server.port=5690"
-  #         ## Middleware for HTTPS redirection
+  #         - "traefik.http.routers.invite.entrypoints=http"
+  #         - "traefik.http.routers.invite.rule=Host(`invite.${DOMAIN}`)" 
   #         - "traefik.http.middlewares.invite-https-redirect.redirectscheme.scheme=https"
-  #         ## Authentik middleware
-  #         - "traefik.http.routers.invite-secure-internal.middlewares=middlewares-authentik@file"
-  #         - "traefik.http.routers.invite-secure-external.middlewares=middlewares-authentik@file"
-  #         # Network
+  #         - "traefik.http.routers.invite.middlewares=invite-https-redirect"
+  #         - "traefik.http.routers.invite-secure.entrypoints=https"
+  #         - "traefik.http.routers.invite-secure.rule=Host(`invite.${DOMAIN}`)" 
+  #         - "traefik.http.routers.invite-secure.tls=true"
+  #         - "traefik.http.routers.invite-secure.service=invite"
+  #         - "traefik.http.services.invite.loadbalancer.server.port=5690"
   #         - "traefik.swarm.network=proxy"
   #       #HOMEPAGE
   #         - "homepage.group=Media"
   #         - "homepage.name=wizarr"
   #         - "homepage.icon=wizarr.png"
   #         - "homepage.href=https://invite.${DOMAIN}"
-  #       #PANGOLIN
-  #         - pangolin.public-resources.wizarr.name=Wizarr
-  #         - pangolin.public-resources.wizarr.protocol=http
-  #         - pangolin.public-resources.wizarr.full-domain=wizarr.${DOMAIN}
-  #         - pangolin.public-resources.wizarr.targets[0].method=https
-  #         - pangolin.public-resources.wizarr.targets[0].hostname=wizarr.${DOMAIN}
-  #         - pangolin.public-resources.wizarr.targets[0].port=443
+
 
 volumes:
   media-data:
