@@ -318,7 +318,7 @@ services:
         - "traefik.http.routers.nzbget-secure.tls=true"
         - "traefik.http.routers.nzbget-secure.service=nzbget"
         - "traefik.http.services.nzbget.loadbalancer.server.port=6789"
-        - "traefik.http.routers.nzbget-secure.middlewares=middlewares-authentik@file"
+        # - "traefik.http.routers.nzbget-secure.middlewares=middlewares-authentik@file"
         # Network 
         - "traefik.swarm.network=proxy"
       #HOMEPAGE
