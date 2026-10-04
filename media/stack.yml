@@ -245,7 +245,7 @@ services:
         condition: any
       placement:
         constraints:
-          - node.hostname == swarm-02
+          - node.hostname == swarm-01
       labels:
       #TRAEFIK
         - "traefik.enable=true"
@@ -288,7 +288,7 @@ services:
         condition: any
       placement:
         constraints:
-          - node.hostname == swarm-02
+          - node.hostname == swarm-01
       labels:
         #TRAEFIK
         - "traefik.enable=true"
