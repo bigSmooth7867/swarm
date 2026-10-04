@@ -18,6 +18,7 @@ services:
       # Preserve current auth/behavior settings (matches existing config.xml)
       - PROWLARR__LOG__CONSOLELEVEL=Warn
       - PROWLARR__LOG__LEVEL=Warn
+      - PROWLARR__LOG__ROTATE=10
       - PROWLARR__AUTH__METHOD=Forms
       - PROWLARR__AUTH__REQUIRED=DisabledForLocalAddresses
       - PROWLARR__LOG__ANALYTICSENABLED=False
@@ -50,7 +51,7 @@ services:
         - "traefik.http.routers.prowlarr-secure.tls=true"
         - "traefik.http.routers.prowlarr-secure.service=prowlarr"
         - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
-        - "traefik.http.routers.prowlarr-secure.middlewares=middlewares-authentik@file" 
+        # - "traefik.http.routers.prowlarr-secure.middlewares=middlewares-authentik@file" 
         - "traefik.swarm.network=proxy"
       #HOMEPAGE
         - "homepage.group=Media"
@@ -82,6 +83,7 @@ services:
       # cache volume doesn't reset them to first-run defaults
       - RADARR__LOG__CONSOLELEVEL=Warn
       - RADARR__LOG__LEVEL=Warn
+      - RADARR__LOG__ROTATE=10
       - RADARR__AUTH__METHOD=External #Forms
       - RADARR__AUTH__REQUIRED=DisabledForLocalAddresses
       - RADARR__LOG__ANALYTICSENABLED=False
@@ -115,7 +117,7 @@ services:
         - "traefik.http.routers.radarr-secure.tls=true"
         - "traefik.http.routers.radarr-secure.service=radarr"
         - "traefik.http.services.radarr.loadbalancer.server.port=7878"
-        - "traefik.http.routers.radarr-secure.middlewares=middlewares-authentik@file"
+        # - "traefik.http.routers.radarr-secure.middlewares=middlewares-authentik@file"
         - "traefik.swarm.network=proxy"
       #HOMEPAGE
         - homepage.group=Media
