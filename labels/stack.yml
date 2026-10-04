@@ -16,7 +16,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.role == manager
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       resources:
         limits:
           cpus: '1'
