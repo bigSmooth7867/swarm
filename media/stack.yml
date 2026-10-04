@@ -51,7 +51,7 @@ services:
         - "traefik.http.routers.prowlarr-secure.tls=true"
         - "traefik.http.routers.prowlarr-secure.service=prowlarr"
         - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
-        # - "traefik.http.routers.prowlarr-secure.middlewares=middlewares-authentik@file" 
+        - "traefik.http.routers.prowlarr-secure.middlewares=middlewares-authentik@file" 
         - "traefik.swarm.network=proxy"
       #HOMEPAGE
         - "homepage.group=Media"
