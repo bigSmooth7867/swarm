@@ -60,7 +60,7 @@ services:
       # local admin around for break-glass access either way.
       # - FORGEJO__service__ENABLE_INTERNAL_SIGNIN=false
     volumes:
-      - /mnt/cephfs/app_data/forgejo/data:/data
+      - /home/nexus/local/forgejo/data:/data
       - /etc/localtime:/etc/localtime:ro
     healthcheck:
       test: ["CMD-SHELL", "wget --quiet --spider http://localhost:3000/api/healthz || exit 1"]
@@ -81,6 +81,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       resources:
         limits:
           memory: 512M

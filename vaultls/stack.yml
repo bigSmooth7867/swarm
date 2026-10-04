@@ -2,7 +2,7 @@ services:
   vaultls:
     image: ghcr.io/7ritn/vaultls:v1.4.0
     volumes:
-      - /mnt/cephfs/app_data/vaultls/data:/app/data
+      - /home/nexus/local/vaultls/data:/app/data
     environment:
       - VAULTLS_URL=https://vaultls.${DOMAIN}/
       - VAULTLS_OIDC_AUTH_URL=https://auth.${DOMAIN}/application/o/vaultls/
@@ -27,7 +27,7 @@ services:
         window: 120s
       placement:
         constraints:
-          - node.hostname == swarm-02
+          - node.hostname == swarm-01
       labels:
         # TRAEFIK
         - "traefik.enable=true"

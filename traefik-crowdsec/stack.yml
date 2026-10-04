@@ -41,11 +41,11 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/traefik.yml:/traefik.yml:ro
-      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/acme.json:/acme.json
-      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/config.yml:/config.yml:ro
-      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/logs:/var/log/traefik
-      - /mnt/cephfs/app_data/vaultls/data/ca/ca-tls.cert:/certs/vaultls-ca.cert:ro
+      - /home/nexus/local/traefik-crowdsec/traefik/traefik.yml:/traefik.yml:ro
+      - /home/nexus/local/traefik-crowdsec/traefik/acme.json:/acme.json
+      - /home/nexus/local/traefik-crowdsec/traefik/config.yml:/config.yml:ro
+      - /home/nexus/local/traefik-crowdsec/traefik/logs:/var/log/traefik
+      - /home/nexus/local/vaultls/data/ca/ca-tls.cert:/certs/vaultls-ca.cert:ro
     networks:
       - proxy
     deploy:
@@ -53,6 +53,7 @@ services:
       placement:
         constraints:
           - node.role == manager
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
         delay: 5s
@@ -114,13 +115,13 @@ services:
       LEVEL_WARN: "true"
     volumes:
       # Mount entire config dir - CrowdSec needs to write credential files on init
-      - /mnt/cephfs/app_data/traefik-crowdsec/crowdsec/config:/etc/crowdsec
+      - /home/nexus/local/traefik-crowdsec/crowdsec/config:/etc/crowdsec
       # Data directory for persistence
-      - /mnt/cephfs/app_data/traefik-crowdsec/crowdsec/data:/var/lib/crowdsec/data
+      - /home/nexus/local/traefik-crowdsec/crowdsec/data:/var/lib/crowdsec/data
       # Traefik logs to parse
-      - /mnt/cephfs/app_data/traefik-crowdsec/traefik/logs:/var/log/traefik/:ro
+      - /home/nexus/local/traefik-crowdsec/traefik/logs:/var/log/traefik/:ro
       # Old config - don't mount entire /etc/crowdsec, it overwrites credential files
-      # - /mnt/cephfs/app_data/traefik-crowdsec/crowdsec/config:/etc/crowdsec
+      # - /home/nexus/local/traefik-crowdsec/crowdsec/config:/etc/crowdsec
     # ports:
     #   - target: 6060
     #     published: 6060
@@ -138,6 +139,7 @@ services:
       placement:
         constraints:
           - node.role == manager
+          - node.hostname == swarm-01   # data is local on swarm-01 now
         preferences:
           - spread: node.id  # Prefer spreading if we ever scale up
       restart_policy:
