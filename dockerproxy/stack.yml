@@ -16,10 +16,10 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     deploy:
-      replicas: 1
+      mode: global
       placement:
         constraints:
-          - node.hostname == swarm-01   # data is local on swarm-01 now
+          - node.role == manager
       restart_policy:
         condition: on-failure
         delay: 5s
