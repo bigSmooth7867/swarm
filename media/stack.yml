@@ -426,13 +426,13 @@ volumes:
     driver_opts:
       type: nfs
       o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
-      device: ":/mnt/tank/media/data/.config/sonarr"
+      device: ":/mnt/tank/media/config/sonarr"
   radarr-config:
     driver: local
     driver_opts:
       type: nfs
       o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
-      device: ":/mnt/tank/media/data/.config/radarr"
+      device: ":/mnt/tank/media/config/radarr"
 
 secrets:
   prowlarr--pg_pass:
