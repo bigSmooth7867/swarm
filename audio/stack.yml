@@ -13,7 +13,7 @@ services:
       - podcast:/podcast
       # The metadata directory can be stored anywhere on your computer
       # you are running ABS on
-      - /home/nexus/docker-resources/audiobookshelf/metadata:/metadata
+      - /home/nexus/local/audiobookshelf/metadata:/metadata
       # The config directory needs to be on the same physical machine
       # you are running ABS on
       - /home/nexus/local/audiobookshelf/config:/config

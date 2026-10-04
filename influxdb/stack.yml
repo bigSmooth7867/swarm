@@ -15,8 +15,8 @@ services:
       - INFLUXDB3_LOG_FILTER=warn
       - INFLUXDB3_UNSET_VARS=LOG_FILTER
     volumes:
-      - /home/nexus/docker-resources/influxdb3/data:/var/lib/influxdb3/data
-      - /home/nexus/docker-resources/influxdb3/plugins:/var/lib/influxdb3/plugins
+      - /home/nexus/local/influxdb3/data:/var/lib/influxdb3/data
+      - /home/nexus/local/influxdb3/plugins:/var/lib/influxdb3/plugins
     networks:
       - proxy
       - internal
@@ -59,8 +59,8 @@ services:
     # ports:
     #   - "8888:80"
     volumes:
-      - /home/nexus/docker-resources/influxdb3/explorer/db:/db:rw
-      - /home/nexus/docker-resources/influxdb3/explorer/config:/app-root/config:ro
+      - /home/nexus/local/influxdb3/explorer/db:/db:rw
+      - /home/nexus/local/influxdb3/explorer/config:/app-root/config:ro
     networks:
       - proxy
       - internal
