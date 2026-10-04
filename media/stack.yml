@@ -19,7 +19,7 @@ services:
       - PROWLARR__LOG__CONSOLELEVEL=Warn
       - PROWLARR__LOG__LEVEL=Warn
       - PROWLARR__LOG__ROTATE=10
-      - PROWLARR__AUTH__METHOD=Forms
+      - PROWLARR__AUTH__METHOD=External
       - PROWLARR__AUTH__REQUIRED=DisabledForLocalAddresses
       - PROWLARR__LOG__ANALYTICSENABLED=False
       - PROWLARR__APP__INSTANCENAME=Prowlarr
@@ -117,7 +117,7 @@ services:
         - "traefik.http.routers.radarr-secure.tls=true"
         - "traefik.http.routers.radarr-secure.service=radarr"
         - "traefik.http.services.radarr.loadbalancer.server.port=7878"
-        # - "traefik.http.routers.radarr-secure.middlewares=middlewares-authentik@file"
+        - "traefik.http.routers.radarr-secure.middlewares=middlewares-authentik@file"
         - "traefik.swarm.network=proxy"
       #HOMEPAGE
         - homepage.group=Media
@@ -150,7 +150,7 @@ services:
       - SONARR__LOG__CONSOLELEVEL=Warn
       - SONARR__LOG__LEVEL=Warn
       - SONARR__LOG__ROTATE=10
-      - SONARR__AUTH__METHOD=Basic #External #Forms #Basic
+      - SONARR__AUTH__METHOD=External #Forms #Basic
       - SONARR__AUTH__REQUIRED=DisabledForLocalAddresses #Enabled
       - SONARR__LOG__ANALYTICSENABLED=False
       - SONARR__APP__INSTANCENAME=Sonarr
@@ -183,7 +183,7 @@ services:
         - "traefik.http.routers.sonarr-secure.tls=true"
         - "traefik.http.routers.sonarr-secure.service=sonarr"
         - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
-        # - "traefik.http.routers.sonarr-secure.middlewares=middlewares-authentik@file"
+        - "traefik.http.routers.sonarr-secure.middlewares=middlewares-authentik@file"
         - "traefik.swarm.network=proxy"
       #HOMEPAGE
         - "homepage.group=Media"
