@@ -6,6 +6,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
     environment:

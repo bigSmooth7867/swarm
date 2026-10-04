@@ -15,10 +15,13 @@ services:
     #     protocol: tcp
     #     mode: host
     volumes:
-      - /mnt/cephfs/app_data/homepage/config:/app/config
-      # - /mnt/cephfs/app_data/homepage/icons:/app/public/icons
+      - /home/nexus/local/homepage/config:/app/config
+      # - /home/nexus/local/homepage/icons:/app/public/icons
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: on-failure
         delay: 5s

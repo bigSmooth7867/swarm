@@ -13,8 +13,8 @@ services:
       - freshrss--oidc_client_secret
       - freshrss--oidc_client_crypto_key
     volumes:
-      - /mnt/cephfs/app_data/freshrss/data:/var/www/FreshRSS/data
-      - /mnt/cephfs/app_data/freshrss/extensions:/var/www/FreshRSS/extensions
+      - /home/nexus/local/freshrss/data:/var/www/FreshRSS/data
+      - /home/nexus/local/freshrss/extensions:/var/www/FreshRSS/extensions
     environment:
       TZ: ${TZ}
       CRON_MIN: '3,33'
@@ -41,6 +41,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       update_config:
         order: stop-first
         parallelism: 1

@@ -7,8 +7,8 @@ services:
       - "1883:1883"
       - "9001:9001"
     volumes:
-      - /mnt/cephfs/app_data/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - /mnt/cephfs/app_data/mosquitto/config/pwfile:/mosquitto/config/pwfile
+      - /home/nexus/local/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - /home/nexus/local/mosquitto/config/pwfile:/mosquitto/config/pwfile
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 1883 || exit 1"]
       interval: 30s
@@ -25,6 +25,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   # swarm-01 or swarm-02
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       update_config:
         order: stop-first
         parallelism: 1
@@ -47,7 +48,7 @@ services:
       - TZ=${TZ}
       - HOST_HOSTNAME={{.Node.Hostname}}.localdomain #used for advertise_addr
     volumes:
-      - /mnt/cephfs/app_data/hassio:/config
+      - /home/nexus/local/hassio:/config
 #      - /etc/localtime:/etc/localtime:ro
     ports:
     #  - "5353:5353/udp" #mDNS
@@ -80,6 +81,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   # swarm-01 or swarm-02
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
       labels:
@@ -122,7 +124,7 @@ services:
       # - ESPHOME_PASSWORD=${ESPHOME_PASSWORD}
       - ESPHOME_TRUSTED_DOMAINS=esphome.${DOMAIN}
     volumes:
-       - /mnt/cephfs/app_data/esphome/config:/config 
+       - /home/nexus/local/esphome/config:/config 
        - esphome-data:/data
       #  - /dev/shm/esphome-cache:/cache
     # tmpfs:
@@ -143,6 +145,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   # swarm-01 or swarm-02
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       update_config:
         order: stop-first
         parallelism: 1
@@ -178,7 +181,7 @@ services:
       - TZ=${TZ}
       - ZIGBEE2MQTT_CONFIG_ADVANCED_LOG_LEVEL=warning
     volumes:
-      - /mnt/cephfs/app_data/zigbee2mqtt:/app/data
+      - /home/nexus/local/zigbee2mqtt:/app/data
     networks:
       - internal
       - proxy
@@ -198,6 +201,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   # swarm-01 or swarm-02
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       update_config:
         order: stop-first
         parallelism: 1
@@ -236,7 +240,7 @@ services:
       - PGID=${PGID}
       - UMASK=${UMASK}
     volumes:
-      - /mnt/cephfs/app_data/valetudopng/config.yml:/config.yml:ro
+      - /home/nexus/local/valetudopng/config.yml:/config.yml:ro
     # ports:
     #   - 3038:3000
     networks:
@@ -246,6 +250,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   # swarm-01 or swarm-02
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
 
@@ -274,7 +279,7 @@ services:
   #     - MQTT_TOPIC_PREFIX=nolongerevil
   #     - MQTT_DISCOVERY_PREFIX=homeassistant
   #   volumes:
-  #     - /mnt/cephfs/app_data/nolongerevil/data:/data
+  #     - /home/nexus/local/nolongerevil/data:/data
   #   networks:
   #     - proxy
   #     - internal
@@ -361,7 +366,7 @@ services:
   #       condition: any
   #     placement:
   #       constraints:
-  #         - node.hostname == swarm-02
+  #         - node.hostname == swarm-01
   #     labels:
   #       #TRAEFIK
   #       - "traefik.enable=true"

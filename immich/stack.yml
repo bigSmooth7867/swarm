@@ -35,6 +35,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
         delay: 5s
@@ -86,6 +87,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       resources:
         limits:
           memory: 640M
@@ -146,6 +148,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
         delay: 5s
@@ -185,7 +188,7 @@ services:
       IMMICH_URL: http://immich-server:2283
       PUBLIC_BASE_URL: https://pics.${DOMAIN}
     volumes:
-      - /mnt/cephfs/app_data/immich-public-proxy/config/config.json:/app/config.json:ro
+      - /home/nexus/local/immich-public-proxy/config/config.json:/app/config.json:ro
     networks:
       - proxy
       - internal
@@ -194,6 +197,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
         delay: 5s
@@ -224,7 +228,7 @@ services:
   immich-frame:
     image: ghcr.io/immichframe/immichframe:v1.0.38.0
     volumes:
-      - /mnt/cephfs/app_data/immich-frame/config:/app/Config
+      - /home/nexus/local/immich-frame/config:/app/Config
     environment:
       TZ: ${TZ}
       LOG_LEVEL: Warning
@@ -235,6 +239,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
         delay: 5s
@@ -266,7 +271,7 @@ services:
     image: ghcr.io/damongolding/immich-kiosk:0.43.2
     tty: true
     volumes:
-      - /mnt/cephfs/app_data/immich-kiosk/config.yaml:/config.yaml
+      - /home/nexus/local/immich-kiosk/config.yaml:/config.yaml
     environment:
       LANG: "en_US"
       TZ: ${TZ}
@@ -278,6 +283,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
         delay: 5s

@@ -11,7 +11,7 @@ services:
     #   - "8080:8080"
     volumes:
       - maptiler-data:/data
-      - /mnt/cephfs/app_data/maptiler/config.json:/config.json:ro
+      - /home/nexus/local/maptiler/config.json:/config.json:ro
     # command: ["--silent", "--file", "osm-2020-02-10-v3.11_us_florida.mbtiles"]
     command: ["-c", "/config.json", "--silent"]
     networks:
@@ -21,6 +21,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
         delay: 5s

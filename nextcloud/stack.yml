@@ -19,7 +19,7 @@ services:
       - nextcloud--secret
       - nextcloud--passwordsalt
     volumes:
-      - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
+      - /home/nexus/local/nextcloud/html:/var/www/html
       - nextcloud-data:/data
     networks:
       - proxy
@@ -29,6 +29,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       resources:
         limits:
           memory: 2G
@@ -95,7 +96,7 @@ services:
       - nextcloud--secret
       - nextcloud--passwordsalt
     volumes:
-      - /mnt/cephfs/app_data/nextcloud/html:/var/www/html
+      - /home/nexus/local/nextcloud/html:/var/www/html
       - nextcloud-data:/data
     networks:
       - internal
@@ -104,6 +105,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
     logging:
       driver: json-file
       options:
@@ -129,6 +131,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       resources:
         limits:
           memory: 640M

@@ -33,7 +33,7 @@ services:
       - prowlarr--pg_pass
       - prowlarr--api_key
     volumes:
-      - /mnt/cephfs/app_data/prowlarr/data:/config
+      - /home/nexus/local/prowlarr/data:/config
     # ports:
     #     - 9696:9696
     networks:
@@ -43,6 +43,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
       labels:
@@ -101,7 +102,7 @@ services:
       - radarr--pg_pass
       - radarr--api_key
     volumes:
-      # - /mnt/cephfs/app_data/radarr/data:/config   # old location; rollback = swap back
+      # - /home/nexus/local/radarr/data:/config   # old location; rollback = swap back
       - radarr-config:/config
       - media-data:/data
       # Throwaway log folder: console (Warn) is what matters; nothing kept on NFS
@@ -116,6 +117,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
       labels:
@@ -174,7 +176,7 @@ services:
       - sonarr--pg_pass
       - sonarr--api_key
     volumes:
-      # - /mnt/cephfs/app_data/sonarr/data:/config   # old location; rollback = swap back
+      # - /home/nexus/local/sonarr/data:/config   # old location; rollback = swap back
       - sonarr-config:/config
       - media-data:/data
       # Throwaway log folder: console (Warn) is what matters; nothing kept on NFS
@@ -189,6 +191,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
       labels:
@@ -315,7 +318,7 @@ services:
   iSponsorBlockTV:
     image: ghcr.io/dmunozv04/isponsorblocktv:v2.11.0
     volumes:
-      - /mnt/cephfs/app_data/isponsorblocktv:/app/data
+      - /home/nexus/local/isponsorblocktv:/app/data
     networks:
       - proxy
     deploy:
@@ -323,6 +326,7 @@ services:
       placement:
         constraints:
           - node.labels.homeauto == true   
+          - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
 
@@ -344,7 +348,7 @@ services:
   #         condition: any
   #       placement:
   #         constraints:
-  #           - node.hostname == swarm-02
+  #           - node.hostname == swarm-01
   #       labels:
   #         #TRAEFIK
   #         - "traefik.enable=true"
@@ -384,7 +388,7 @@ services:
   #       condition: any
   #     placement:
   #       constraints:
-  #         - node.hostname == swarm-02
+  #         - node.hostname == swarm-01
   #     labels:
   #     #TRAEFIK
   #       - "traefik.enable=true"
