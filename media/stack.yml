@@ -6,24 +6,29 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - UMASK=002
+      # All settings pinned via env (env overrides config.xml); state lives in Postgres.
+      # Server
       - PROWLARR__SERVER__PORT=9696
+      - PROWLARR__SERVER__ALLOWEDHOSTS=prowlarr.${DOMAIN},prowlarr,media_prowlarr
+      # Postgres (DB names/users must match the existing databases)
       - PROWLARR__POSTGRES__HOST=db.${DOMAIN}
       - PROWLARR__POSTGRES__PORT=5000
       - PROWLARR__POSTGRES__USER=prowlarr_user
       - PROWLARR__POSTGRES__MAINDB=prowlarr-main
       - PROWLARR__POSTGRES__LOGDB=prowlarr-log
       - FILE__PROWLARR__POSTGRES__PASSWORD=/run/secrets/prowlarr--pg_pass
-      # Pin the API key so the *arr app syncs survive cache wipes
+      # Auth: External = Authentik forward-auth in front, no app login.
+      # API key pinned so integrations survive config wipes.
       - FILE__PROWLARR__AUTH__APIKEY=/run/secrets/prowlarr--api_key
-      # Preserve current auth/behavior settings (matches existing config.xml)
-      - PROWLARR__LOG__CONSOLELEVEL=Warn
-      - PROWLARR__LOG__LEVEL=Warn
-      - PROWLARR__LOG__ROTATE=10
       - PROWLARR__AUTH__METHOD=External
       - PROWLARR__AUTH__REQUIRED=DisabledForLocalAddresses
+      # Logging: Warn to the console only (Warn turns the log files off)
+      - PROWLARR__LOG__LEVEL=Warn
+      - PROWLARR__LOG__CONSOLELEVEL=Warn
+      - PROWLARR__LOG__ROTATE=10
       - PROWLARR__LOG__ANALYTICSENABLED=False
+      # App
       - PROWLARR__APP__INSTANCENAME=Prowlarr
-      - PROWLARR__SERVER__ALLOWEDHOSTS=prowlarr.${DOMAIN},prowlarr,media_prowlarr
     secrets:
       - prowlarr--pg_pass
       - prowlarr--api_key
@@ -69,33 +74,39 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - UMASK=002
-      # Config pinned via env (overrides config.xml) — state lives in Postgres.
-      # DB names/users MUST match the values in your current config.xml.
+      # All settings pinned via env (env overrides config.xml); state lives in Postgres.
+      # Server
       - RADARR__SERVER__PORT=7878
+      - RADARR__SERVER__ALLOWEDHOSTS=radarr.${DOMAIN},radarr,media_radarr
+      # Postgres (DB names/users must match the existing databases)
       - RADARR__POSTGRES__HOST=db.${DOMAIN}
       - RADARR__POSTGRES__PORT=5000
       - RADARR__POSTGRES__USER=radarr_user
       - RADARR__POSTGRES__MAINDB=radarr-main
       - RADARR__POSTGRES__LOGDB=radarr-log
       - FILE__RADARR__POSTGRES__PASSWORD=/run/secrets/radarr--pg_pass
-      # Pin the API key so integrations (Prowlarr etc.) survive cache wipes
+      # Auth: External = Authentik forward-auth in front, no app login.
+      # API key pinned so integrations survive config wipes.
       - FILE__RADARR__AUTH__APIKEY=/run/secrets/radarr--api_key
-      # Preserve auth/behavior settings from the old config.xml so a fresh
-      # cache volume doesn't reset them to first-run defaults
-      - RADARR__LOG__CONSOLELEVEL=Warn
-      - RADARR__LOG__LEVEL=Warn
-      - RADARR__LOG__ROTATE=10
-      - RADARR__AUTH__METHOD=External #Forms
+      - RADARR__AUTH__METHOD=External
       - RADARR__AUTH__REQUIRED=DisabledForLocalAddresses
+      # Logging: Warn to the console only (Warn turns the log files off)
+      - RADARR__LOG__LEVEL=Warn
+      - RADARR__LOG__CONSOLELEVEL=Warn
+      - RADARR__LOG__ROTATE=10
       - RADARR__LOG__ANALYTICSENABLED=False
+      # App
       - RADARR__APP__INSTANCENAME=Radarr
-      - RADARR__SERVER__ALLOWEDHOSTS=radarr.${DOMAIN},radarr,media_radarr
     secrets:
       - radarr--pg_pass
       - radarr--api_key
     volumes:
-      - /mnt/cephfs/app_data/radarr/data:/config
+      # - /mnt/cephfs/app_data/radarr/data:/config   # old location; rollback = swap back
+      - radarr-config:/config
       - media-data:/data
+      # Throwaway log folder: console (Warn) is what matters; nothing kept on NFS
+      - type: tmpfs
+        target: /config/logs
     # ports:
     #   - 7878:7878
     networks:
@@ -136,33 +147,39 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - UMASK=002
-      # Config pinned via env (overrides config.xml) — state lives in Postgres.
-      # DB names/users MUST match the values in your current config.xml.
+      # All settings pinned via env (env overrides config.xml); state lives in Postgres.
+      # Server
       - SONARR__SERVER__PORT=8989
+      - SONARR__SERVER__ALLOWEDHOSTS=sonarr.${DOMAIN},sonarr,media_sonarr
+      # Postgres (DB names/users must match the existing databases)
       - SONARR__POSTGRES__HOST=db.${DOMAIN}
       - SONARR__POSTGRES__PORT=5000
       - SONARR__POSTGRES__USER=sonarr_user
       - SONARR__POSTGRES__MAINDB=sonarr-main
       - SONARR__POSTGRES__LOGDB=sonarr-log
       - FILE__SONARR__POSTGRES__PASSWORD=/run/secrets/sonarr--pg_pass
-      # Pin the API key so integrations (Prowlarr etc.) survive cache wipes
+      # Auth: External = Authentik forward-auth in front, no app login.
+      # API key pinned so integrations survive config wipes.
       - FILE__SONARR__AUTH__APIKEY=/run/secrets/sonarr--api_key
-      # Preserve current auth/behavior settings (Sonarr uses Basic/Enabled,
-      # unlike Radarr's Forms — matches its existing config.xml)
-      - SONARR__LOG__CONSOLELEVEL=Warn
+      - SONARR__AUTH__METHOD=External
+      - SONARR__AUTH__REQUIRED=DisabledForLocalAddresses
+      # Logging: Warn to the console only (Warn turns the log files off)
       - SONARR__LOG__LEVEL=Warn
+      - SONARR__LOG__CONSOLELEVEL=Warn
       - SONARR__LOG__ROTATE=10
-      - SONARR__AUTH__METHOD=External #Forms #Basic
-      - SONARR__AUTH__REQUIRED=DisabledForLocalAddresses #Enabled
       - SONARR__LOG__ANALYTICSENABLED=False
+      # App
       - SONARR__APP__INSTANCENAME=Sonarr
-      - SONARR__SERVER__ALLOWEDHOSTS=sonarr.${DOMAIN},sonarr,media_sonarr
     secrets:
       - sonarr--pg_pass
       - sonarr--api_key
     volumes:
-      - /mnt/cephfs/app_data/sonarr/data:/config
+      # - /mnt/cephfs/app_data/sonarr/data:/config   # old location; rollback = swap back
+      - sonarr-config:/config
       - media-data:/data
+      # Throwaway log folder: console (Warn) is what matters; nothing kept on NFS
+      - type: tmpfs
+        target: /config/logs
     # ports:
     #   - 8989:8989 
     networks:
@@ -403,6 +420,19 @@ volumes:
       type: nfs
       o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
       device: ":/mnt/tank/media/data/usenet"
+  # Sonarr/Radarr /config on NFS (state is in Postgres; this is mostly MediaCover)
+  sonarr-config:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/tank/media/data/.config/sonarr"
+  radarr-config:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=truenas.localdomain,rw,nfsvers=4,hard,noatime
+      device: ":/mnt/tank/media/data/.config/radarr"
 
 secrets:
   prowlarr--pg_pass:
