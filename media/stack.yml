@@ -183,7 +183,7 @@ services:
         - "traefik.http.routers.sonarr-secure.tls=true"
         - "traefik.http.routers.sonarr-secure.service=sonarr"
         - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
-        - "traefik.http.routers.sonarr-secure.middlewares=middlewares-authentik@file"
+        # - "traefik.http.routers.sonarr-secure.middlewares=middlewares-authentik@file"
         - "traefik.swarm.network=proxy"
       #HOMEPAGE
         - "homepage.group=Media"
