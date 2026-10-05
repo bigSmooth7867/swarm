@@ -112,10 +112,13 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  nextcloud-redis:
-    image: redis:7.4.11-alpine
+  nextcloud-redis:            # name kept: config.php points at this hostname
+    image: valkey/valkey:9.1.2-alpine
+    user: "999:999"           # image's valkey user; entrypoint script is skipped
+    read_only: true
+    cap_drop: [ALL]
+    entrypoint: ["valkey-server"]
     command:
-      - redis-server
       - --maxmemory
       - 512mb
       - --maxmemory-policy
@@ -124,21 +127,26 @@ services:
       - ""
       - --appendonly
       - "no"
+      - --loglevel
+      - warning
+    volumes:
+      - type: tmpfs           # valkey's workdir; nothing is persisted
+        target: /data
     networks:
       - internal
     deploy:
       replicas: 1
       placement:
         constraints:
-          - node.labels.homeauto == true   
-          - node.hostname == swarm-01   # data is local on swarm-01 now
+          - node.labels.homeauto == true
+          - node.hostname == swarm-01
       resources:
         limits:
           memory: 640M
         reservations:
           memory: 64M
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -147,6 +155,42 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # nextcloud-redis:
+  #   image: redis:7.4.11-alpine
+  #   command:
+  #     - redis-server
+  #     - --maxmemory
+  #     - 512mb
+  #     - --maxmemory-policy
+  #     - noeviction
+  #     - --save
+  #     - ""
+  #     - --appendonly
+  #     - "no"
+  #   networks:
+  #     - internal
+  #   deploy:
+  #     replicas: 1
+  #     placement:
+  #       constraints:
+  #         - node.labels.homeauto == true   
+  #         - node.hostname == swarm-01   # data is local on swarm-01 now
+  #     resources:
+  #       limits:
+  #         memory: 640M
+  #       reservations:
+  #         memory: 64M
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 15s
+  #     timeout: 5s
+  #     retries: 3
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
 
 secrets:
   nextcloud--pg_db:
