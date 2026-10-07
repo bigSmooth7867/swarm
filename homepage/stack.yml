@@ -71,5 +71,5 @@ services:
 networks:
   proxy:
     external: true
-  dockerproxynet:
-    external: true
+  # dockerproxynet:
+  #   external: true
