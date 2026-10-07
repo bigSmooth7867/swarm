@@ -3,7 +3,8 @@ services:
     image: ghcr.io/maxfield-allison/dnsweaver:v2.8.2
     environment:
       - DNSWEAVER_SOURCES=dnsweaver
-      - DNSWEAVER_DOCKER_HOST=tcp://dockerproxy:2375
+      # - DNSWEAVER_DOCKER_HOST=tcp://dockerproxy:2375
+      - DNSWEAVER_DOCKER_HOST=unix:///var/run/docker.sock
       - DNSWEAVER_INSTANCES=internal
       - DNSWEAVER_INTERNAL_TYPE=technitium
       - DNSWEAVER_INTERNAL_URL=https://dns01.${DOMAIN}:53443
@@ -15,9 +16,11 @@ services:
       - DNSWEAVER_INTERNAL_AUTO_HTTPS_RECORDS=false
       - DNSWEAVER_INTERNAL_TTL=3600
       # - DNSWEAVER_DRY_RUN=true
-      - DNSWEAVER_LOG_LEVEL=warn
-    networks:
-      - dockerproxynet
+      - DNSWEAVER_LOG_LEVEL=info #warn
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    # networks:
+    #   - dockerproxynet
     secrets:
       - dnsweaver--technitium_token
     healthcheck:
@@ -47,6 +50,6 @@ services:
 secrets:
   dnsweaver--technitium_token:
     external: true                      
-networks:
-  dockerproxynet:
-    external: true
+# networks:
+#   dockerproxynet:
+#     external: true

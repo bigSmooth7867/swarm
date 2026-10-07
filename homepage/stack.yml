@@ -4,11 +4,11 @@ services:
     environment:
       HOMEPAGE_ALLOWED_HOSTS: homepage2.${DOMAIN}
       PUID: 1000
-      PGID: 1000
+      PGID: 988
       LOG_LEVEL: warn
     networks:
       - proxy
-      - dockerproxynet
+      # - dockerproxynet
     # ports:
     #   - target: 3000
     #     published: 9911
@@ -16,6 +16,7 @@ services:
     #     mode: host
     volumes:
       - /home/nexus/local/homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       # - /home/nexus/local/homepage/icons:/app/public/icons
     deploy:
       replicas: 1
