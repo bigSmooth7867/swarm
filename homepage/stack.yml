@@ -4,7 +4,7 @@ services:
     environment:
       HOMEPAGE_ALLOWED_HOSTS: homepage2.${DOMAIN}
       PUID: 1000
-      PGID: 1000
+      PGID: 987
       LOG_LEVEL: warn
     networks:
       - proxy
