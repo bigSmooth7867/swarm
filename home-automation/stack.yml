@@ -4,8 +4,16 @@ services:
     networks:
       - internal
     ports:
-      - "1883:1883"
-      - "9001:9001"
+     - target: 1883 #sonos
+       published: 1883
+       protocol: tcp
+       mode: host
+     - target: 9001 #sonos
+       published: 9001
+       protocol: tcp
+       mode: host
+      # - "1883:1883"
+      # - "9001:9001"
     volumes:
       - /home/nexus/local/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - /home/nexus/local/mosquitto/config/pwfile:/mosquitto/config/pwfile
