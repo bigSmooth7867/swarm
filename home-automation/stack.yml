@@ -24,7 +24,6 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.homeauto == true   # swarm-01 or swarm-02
           - node.hostname == swarm-01   # data is local on swarm-01 now
       update_config:
         order: stop-first
@@ -80,7 +79,6 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.homeauto == true   # swarm-01 or swarm-02
           - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
@@ -144,7 +142,6 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.homeauto == true   # swarm-01 or swarm-02
           - node.hostname == swarm-01   # data is local on swarm-01 now
       update_config:
         order: stop-first
@@ -200,7 +197,6 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.homeauto == true   # swarm-01 or swarm-02
           - node.hostname == swarm-01   # data is local on swarm-01 now
       update_config:
         order: stop-first
@@ -249,7 +245,6 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.homeauto == true   # swarm-01 or swarm-02
           - node.hostname == swarm-01   # data is local on swarm-01 now
       restart_policy:
         condition: any
