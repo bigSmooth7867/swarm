@@ -55,7 +55,7 @@ volumes:
     driver_opts:
       type: nfs
       o: addr=truenas.localdomain,nfsvers=4,rw,hard,noatime
-      device: ":/mnt/tank/roms/downloads/jdownloader/to_print"
+      device: ":/mnt/tank/iso-archive/jdownloader/to_print"
 
 networks:
   proxy:
