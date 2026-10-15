@@ -3,20 +3,28 @@ services:
     image: influxdb:3.11.5-core
     ports:
       - "8181:8181"
+    entrypoint: /bin/sh
     command:
-      - influxdb3
-      - serve
-      - --node-id=node0
-      - --object-store=file
-      - --data-dir=/var/lib/influxdb3/data
-      - --plugin-dir=/var/lib/influxdb3/plugins
-      - --disable-authz=health,ping
+      - -c
+      - >
+        export AWS_ACCESS_KEY_ID=$$(cat /run/secrets/influxdb3--s3_access_key) &&
+        export AWS_SECRET_ACCESS_KEY=$$(cat /run/secrets/influxdb3--s3_secret_key) &&
+        exec influxdb3 serve
+        --node-id=node0
+        --object-store=s3
+        --bucket=influxdb3
+        --aws-endpoint=https://s3.${DOMAIN}
+        --aws-default-region=us-east-1
+        --plugin-dir=/var/lib/influxdb3/plugins
+        --disable-authz=health,ping
     environment:
       - INFLUXDB3_LOG_FILTER=warn
       - INFLUXDB3_UNSET_VARS=LOG_FILTER
     volumes:
-      - /home/nexus/local/influxdb3-core/data:/var/lib/influxdb3/data
       - /home/nexus/local/influxdb3-core/plugins:/var/lib/influxdb3/plugins
+    secrets:
+      - influxdb3--s3_access_key
+      - influxdb3--s3_secret_key
     networks:
       - proxy
       - internal
@@ -105,4 +113,8 @@ networks:
 
 secrets:
   influxdb3--session_secret_key:
+    external: true
+  influxdb3--s3_access_key:
+    external: true
+  influxdb3--s3_secret_key:
     external: true
