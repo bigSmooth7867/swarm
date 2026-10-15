@@ -1,6 +1,6 @@
 services:
   influxdb3-core:
-    image: influxdb:3.11.5-core
+    image: influxdb:3.12.1-core
     ports:
       - "8181:8181"
     entrypoint: /bin/sh
@@ -59,7 +59,7 @@ services:
 
 
   influxdb3-explorer:
-    image: influxdata/influxdb3-ui:1.9.0
+    image: influxdata/influxdb3-ui:1.11.1
     entrypoint: /bin/sh
     command:
       - -c
