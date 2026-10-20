@@ -47,7 +47,7 @@ services:
           memory: 256M
 
   homeassistant:
-    image: linuxserver/homeassistant:2026.9.3-ls248
+    image: linuxserver/homeassistant:2026.10.2-ls257
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -113,7 +113,7 @@ services:
 
 
   esphome:
-    image: ghcr.io/esphome/esphome:2026.9.0
+    image: ghcr.io/esphome/esphome:2026.9.1
     command: ["dashboard", "/config", "--log-level", "warning"]
     environment:
       - PUID=${PUID}
@@ -180,7 +180,7 @@ services:
         - "dnsweaver.hostname=esphome.${DOMAIN}"
 
   zigbee2mqtt:
-    image: koenkk/zigbee2mqtt:2.14.1
+    image: koenkk/zigbee2mqtt:2.14.2
     user: "${PUID}:${PGID}"
     environment:
       - TZ=${TZ}
